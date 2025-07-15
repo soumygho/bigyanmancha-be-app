@@ -1,6 +1,7 @@
 package com.vigyanmancha.backend.service;
 
 import com.vigyanmancha.backend.domain.postgres.SchoolDetails;
+import com.vigyanmancha.backend.domain.postgres.UserDetails;
 import com.vigyanmancha.backend.domain.postgres.VigyanKendraDetails;
 import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.response.SchoolDetailsResponseDto;
@@ -60,5 +61,36 @@ public class VigyanKendraDetailsService {
         return schoolDetailsList.stream()
                 .map(SchoolDetailsMapper.INSTANCE::mapFromEntity)
                 .collect(Collectors.toSet());
+    }
+
+    public VigyanKendraDetails existOrThrow(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("VigyanKendra not found"));
+    }
+
+    public Set<UserDetails> getUserDetailsListByVigyanKendraById(Long id) {
+        var vigyanKendraDetails =  repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("VigyanKendra not found"));
+        Set<UserDetails> userDetailsList =  vigyanKendraDetails.getUsers();
+        if(Objects.isNull(userDetailsList)) {
+            return Collections.emptySet();
+        }
+        return userDetailsList;
+    }
+
+    public VigyanKendraDetailsRequestDTO updateVigyanKendra(VigyanKendraDetailsRequestDTO dto) {
+
+        VigyanKendraDetails entity = repository.findById(dto.getId())
+                .orElseThrow(() -> new RuntimeException("VigyanKendra not found"));
+        entity.setCode(dto.getCode());
+        entity.setName(dto.getName());
+        VigyanKendraDetails saved = repository.save(entity);
+        return VigyanKendraDetailsMapper.toDTO(saved);
+    }
+
+    public void deleteVigyanKendraById(Long id) {
+        VigyanKendraDetails entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("VigyanKendra not found"));
+        repository.delete(entity);
     }
 }

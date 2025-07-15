@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,6 +68,12 @@ public class SchoolDetailsService {
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setVigyanKendraId(entity.getVigyanKendraDetails().getId());
+        dto.setVigyanKendraName(entity.getVigyanKendraDetails().getName());
+        if(Objects.nonNull(entity.getExaminationCentre())) {
+            dto.setExamCentreName(entity.getExaminationCentre().getName());
+            dto.setExamCentreId(entity.getExaminationCentre().getId());
+        }
+
         return dto;
     }
 }

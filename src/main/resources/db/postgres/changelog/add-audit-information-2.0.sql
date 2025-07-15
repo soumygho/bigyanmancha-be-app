@@ -23,7 +23,7 @@ ALTER TABLE subject_details ADD created_date TIMESTAMP WITHOUT TIME ZONE;
 ALTER TABLE subject_details ADD modified_by   VARCHAR(255);
 ALTER TABLE subject_details ADD modified_date TIMESTAMP WITHOUT TIME ZONE;
 
-ALTER TABLE subject_details ADD created_by VARCHAR(255);
-ALTER TABLE subject_details ADD created_date TIMESTAMP WITHOUT TIME ZONE;
-ALTER TABLE subject_details ADD modified_by   VARCHAR(255);
-ALTER TABLE subject_details ADD modified_date TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE examination_centre_details ADD created_by VARCHAR(255);
+ALTER TABLE examination_centre_details ADD created_date TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE examination_centre_details ADD modified_by   VARCHAR(255);
+ALTER TABLE examination_centre_details ADD modified_date TIMESTAMP WITHOUT TIME ZONE;

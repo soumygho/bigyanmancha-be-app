@@ -25,5 +25,9 @@ public class SchoolDetails extends Auditable {
     @ManyToOne
     @JoinColumn(name = "exam_centre_id")
     private ExaminationCentreDetails examinationCentre; // One-to-many relationship with Examination Centre
+
+    @ManyToOne
+    @JoinColumn(name = "enrollment_session_id", nullable = false)
+    private EnrollmentSession enrollmentSession;
 }
 

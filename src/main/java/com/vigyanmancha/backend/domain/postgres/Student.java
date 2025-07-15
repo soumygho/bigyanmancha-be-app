@@ -19,8 +19,10 @@ public class Student extends Auditable {
 
     private String name;
 
-    @Column(unique = true, nullable = false, name = "roll_number")
-    private String rollNumber;
+    @Column(unique = false, nullable = false, name = "roll")
+    private String roll;
+    @Column(unique = false, nullable = false, name = "num")
+    private String number;
 
     @ManyToOne
     @JoinColumn(name = "school_id")
@@ -33,6 +35,10 @@ public class Student extends Auditable {
     @ManyToOne
     @JoinColumn(name = "student_class_id")
     private StudentClass studentClass;
+
+    @ManyToOne
+    @JoinColumn(name = "enrollment_session_id", nullable = false)
+    private EnrollmentSession enrollmentSession;
 
     @NotNull
     @Pattern(regexp = "^(F|M|O)$", message = "Sex must be one of 'F', 'M', or 'O'")

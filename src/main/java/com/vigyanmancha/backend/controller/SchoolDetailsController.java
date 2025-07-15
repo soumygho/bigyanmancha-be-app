@@ -12,23 +12,34 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/schools")
 @Tag(name = "School details api")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class SchoolDetailsController {
     private final SchoolDetailsService schoolDetailsService;
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public List<SchoolDetailsRequestDTO> getAllSchools() {
         return schoolDetailsService.getAll();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(path="/{id}", produces = "application/json")
     public SchoolDetailsRequestDTO getSchoolById(@PathVariable Long id) {
         return schoolDetailsService.getById(id);
     }
 
-    @PostMapping
+    @PostMapping(produces = "application/json", consumes = "application/json")
     public SchoolDetailsRequestDTO createSchool(@RequestBody SchoolDetailsRequestDTO schoolDTO) {
         return schoolDetailsService.create(schoolDTO);
+    }
+
+    @PutMapping(produces = "application/json", consumes = "application/json")
+    public SchoolDetailsRequestDTO updateSchool(@RequestBody SchoolDetailsRequestDTO schoolDTO) {
+        return schoolDetailsService.update(schoolDTO.getId(), schoolDTO);
+    }
+
+    @DeleteMapping
+    public void deleteSchool(Long id) {
+        schoolDetailsService.delete(id);
     }
 }
 

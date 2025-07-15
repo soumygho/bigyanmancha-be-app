@@ -1,11 +1,11 @@
-package com.vigyanmancha.backend.config.security;
+package com.vigyanmancha.backend.config.db;
 
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-@Component
+@Component("auditorAware")
 public class AuditorAwareImpl implements AuditorAware<String> {
     public static String SYSTEM = "system";
 

@@ -13,32 +13,33 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/student-class")
 @Tag(name = "Student class api")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class StudentClassController {
     private final StudentClassService studentClassService;
 
-    @GetMapping
-    public List<StudentClassDetailsResponseDto> getAll() {
+    @GetMapping(produces = "application/json")
+    public List<StudentClassDetailsResponseDto> getAllClasses() {
         return studentClassService.getAll();
     }
 
-    @GetMapping("/{id}")
-    public StudentClassDetailsResponseDto getById(@PathVariable Long id) {
+    @GetMapping(path = "/{id}", produces = "application/json")
+    public StudentClassDetailsResponseDto getClassById(@PathVariable Long id) {
         return studentClassService.getById(id);
     }
 
-    @PostMapping
-    public StudentClassDetailsResponseDto create(@RequestBody StudentClassRequestDTO requestDTO) {
+    @PostMapping(produces = "application/json", consumes = "application/json")
+    public StudentClassDetailsResponseDto createClass(@RequestBody StudentClassRequestDTO requestDTO) {
         return studentClassService.create(requestDTO);
     }
 
-    @PutMapping
-    public StudentClassDetailsResponseDto update(@RequestBody StudentClassRequestDTO requestDTO) {
+    @PutMapping(produces = "application/json", consumes = "application/json")
+    public StudentClassDetailsResponseDto updateClass(@RequestBody StudentClassRequestDTO requestDTO) {
         return studentClassService.update(requestDTO);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    @DeleteMapping(path="/{id}")
+    public void deleteClass(@PathVariable Long id) {
         studentClassService.delete(id);
     }
 }

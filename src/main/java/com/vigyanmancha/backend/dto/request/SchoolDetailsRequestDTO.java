@@ -9,5 +9,7 @@ public class SchoolDetailsRequestDTO {
     private String name;
     private Long vigyanKendraId; // The ID of the associated VigyanKendraDetails
     private Long examCentreId; // The ID of the associated ExaminationCentreDetails
+    private String vigyanKendraName;
+    private String examCentreName;
 }
 

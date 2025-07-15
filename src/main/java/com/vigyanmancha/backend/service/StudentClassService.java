@@ -8,11 +8,14 @@ import com.vigyanmancha.backend.repository.postgres.StudentClassRepository;
 import com.vigyanmancha.backend.repository.postgres.SubjectDetailsRepository;
 import com.vigyanmancha.backend.utility.mapper.StudentClassMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentClassService {
@@ -49,6 +52,10 @@ public class StudentClassService {
     }
 
     public StudentClassDetailsResponseDto update(StudentClassRequestDTO dto) {
+        log.info(dto.toString());
+        if (CollectionUtils.isEmpty(dto.getSubjectIds())) {
+            dto.setSubjectIds(Collections.emptyList());
+        }
         StudentClass studentClass = studentClassRepository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Student class not found"));
         Set<SubjectDetails> subjectDetailsList = new HashSet<>(subjectDetailsRepository.findAllById(dto.getSubjectIds()));

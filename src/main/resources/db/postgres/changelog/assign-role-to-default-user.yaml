@@ -1,0 +1,8 @@
+databaseChangeLog:
+  -  changeSet:
+       id:  21
+       author: soumya
+       changes:
+         -  customChange:  {
+           "class": "com.vigyanmancha.backend.migrations.AssignRoleToDefaultUser",
+           "helloTo": "world" }

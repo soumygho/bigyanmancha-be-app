@@ -29,15 +29,15 @@ CREATE TABLE examination_centre_details (
 
 --rollback drop table examination_centre_details;
 
-ALTER TABLE school_details ADD CONSTRAINT FK_SCHOOLDETAILS_ON_EXAM_CENTRE FOREIGN KEY (exam_centre_id) REFERENCES examination_centre_details (id);
+ALTER TABLE school_details ADD CONSTRAINT FK_SCHOOLDETAILS_ON_EXAM_CENTRE FOREIGN KEY (exam_centre_id) REFERENCES examination_centre_details (id) ON DELETE SET NULL;
 
-ALTER TABLE school_details ADD CONSTRAINT FK_SCHOOLDETAILS_ON_KENDRA FOREIGN KEY (kendra_id) REFERENCES vigyan_kendra_details (id);
+ALTER TABLE school_details ADD CONSTRAINT FK_SCHOOLDETAILS_ON_KENDRA FOREIGN KEY (kendra_id) REFERENCES vigyan_kendra_details (id) ON DELETE CASCADE;
 
 ALTER TABLE examination_centre_details ADD CONSTRAINT uc_examinationcentredetails_school UNIQUE (school_id);
 
-ALTER TABLE examination_centre_details ADD CONSTRAINT FK_EXAMINATIONCENTREDETAILS_ON_SCHOOL FOREIGN KEY (school_id) REFERENCES school_details (id);
+ALTER TABLE examination_centre_details ADD CONSTRAINT FK_EXAMINATIONCENTREDETAILS_ON_SCHOOL FOREIGN KEY (school_id) REFERENCES school_details (id) ON DELETE CASCADE;
 
-ALTER TABLE examination_centre_details ADD CONSTRAINT FK_EXAMINATIONCENTREDETAILS_ON_VIGYANKENDRA FOREIGN KEY (vigyankendra_id) REFERENCES vigyan_kendra_details (id);
+ALTER TABLE examination_centre_details ADD CONSTRAINT FK_EXAMINATIONCENTREDETAILS_ON_VIGYANKENDRA FOREIGN KEY (vigyankendra_id) REFERENCES vigyan_kendra_details (id) ON DELETE CASCADE;
 
 --changeset vigyanmancha:4
 CREATE TABLE subject_details (
@@ -49,7 +49,7 @@ CREATE TABLE subject_details (
 
 --changeset vigyanmancha:5
 CREATE TABLE class_subjects (
-  class_id BIGINT NOT NULL,
+   class_id BIGINT NOT NULL,
    subject_id BIGINT NOT NULL,
    CONSTRAINT pk_class_subjects PRIMARY KEY (class_id, subject_id)
 );
@@ -60,9 +60,9 @@ CREATE TABLE student_class (
    CONSTRAINT pk_student_class PRIMARY KEY (id)
 );
 
-ALTER TABLE class_subjects ADD CONSTRAINT fk_clasub_on_student_class FOREIGN KEY (class_id) REFERENCES student_class (id);
+ALTER TABLE class_subjects ADD CONSTRAINT fk_clasub_on_student_class FOREIGN KEY (class_id) REFERENCES student_class (id) ON DELETE CASCADE;
 
-ALTER TABLE class_subjects ADD CONSTRAINT fk_clasub_on_subject_details FOREIGN KEY (subject_id) REFERENCES subject_details (id);
+ALTER TABLE class_subjects ADD CONSTRAINT fk_clasub_on_subject_details FOREIGN KEY (subject_id) REFERENCES subject_details (id) ON DELETE CASCADE;
 --rollback drop table class_subjects;
 --rollback drop table student_class;
 
@@ -79,11 +79,11 @@ CREATE TABLE student
     CONSTRAINT pk_student PRIMARY KEY (id)
 );
 
-ALTER TABLE student ADD CONSTRAINT FK_STUDENT_ON_SCHOOL FOREIGN KEY (school_id) REFERENCES school_details (id);
+ALTER TABLE student ADD CONSTRAINT FK_STUDENT_ON_SCHOOL FOREIGN KEY (school_id) REFERENCES school_details (id) ON DELETE SET NULL;
 
-ALTER TABLE student ADD CONSTRAINT FK_STUDENT_ON_STUDENT_CLASS FOREIGN KEY (student_class_id) REFERENCES student_class (id);
+ALTER TABLE student ADD CONSTRAINT FK_STUDENT_ON_STUDENT_CLASS FOREIGN KEY (student_class_id) REFERENCES student_class (id) ON DELETE SET NULL;
 
-ALTER TABLE student ADD CONSTRAINT FK_STUDENT_ON_VIGYAN_KENDRA FOREIGN KEY (vigyan_kendra_id) REFERENCES vigyan_kendra_details (id);
+ALTER TABLE student ADD CONSTRAINT FK_STUDENT_ON_VIGYAN_KENDRA FOREIGN KEY (vigyan_kendra_id) REFERENCES vigyan_kendra_details (id) ON DELETE CASCADE;
 --rollback drop table student;
 
 --changeset vigyanmancha:7
@@ -96,7 +96,7 @@ CREATE TABLE student_marks (
    CONSTRAINT pk_studentmarks PRIMARY KEY (id)
 );
 
-ALTER TABLE student_marks ADD CONSTRAINT FK_STUDENTMARKS_ON_STUDENT FOREIGN KEY (student_id) REFERENCES student (id);
+ALTER TABLE student_marks ADD CONSTRAINT FK_STUDENTMARKS_ON_STUDENT FOREIGN KEY (student_id) REFERENCES student (id) ON DELETE CASCADE;
 
-ALTER TABLE student_marks ADD CONSTRAINT FK_STUDENTMARKS_ON_SUBJECT FOREIGN KEY (subject_id) REFERENCES subject_details (id);
+ALTER TABLE student_marks ADD CONSTRAINT FK_STUDENTMARKS_ON_SUBJECT FOREIGN KEY (subject_id) REFERENCES subject_details (id) ON DELETE CASCADE;
 --rollback drop table student_marks;

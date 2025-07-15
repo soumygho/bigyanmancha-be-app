@@ -1,5 +1,6 @@
 package com.vigyanmancha.backend.controller;
 
+import com.vigyanmancha.backend.domain.postgres.UserDetails;
 import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.response.SchoolDetailsResponseDto;
 import com.vigyanmancha.backend.service.VigyanKendraDetailsService;
@@ -13,32 +14,48 @@ import java.util.Set;
 @Tag(name = "Vigyankendra deatils API", description = "Endpoints for managing Vigyan kendra.")
 @RestController
 @RequestMapping("/api/vigyan-kendra")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class VigyanKendraDetailsController {
     private final VigyanKendraDetailsService service;
 
-    @GetMapping
-    public List<VigyanKendraDetailsRequestDTO> getAll() {
+    @GetMapping(produces = "application/json")
+    public List<VigyanKendraDetailsRequestDTO> getAllVigyanKendras() {
         return service.getAll();
     }
 
-    @GetMapping("/{id}")
-    public VigyanKendraDetailsRequestDTO getById(@PathVariable Long id) {
+    @GetMapping(path = "/{id}", produces = "application/json")
+    public VigyanKendraDetailsRequestDTO getVigyanKendraById(@PathVariable Long id) {
         return service.getVigyanKendraById(id);
     }
 
-    @GetMapping("/code/{code}")
-    public VigyanKendraDetailsRequestDTO getByCode(@PathVariable String code) {
+    @GetMapping(path = "/code/{code}", produces = "application/json", consumes = "application/json")
+    public VigyanKendraDetailsRequestDTO getVigyanKendraByCode(@PathVariable String code) {
         return service.getVigyanKendraByCode(code);
     }
 
-    @PostMapping
-    public VigyanKendraDetailsRequestDTO getVigyanKendraDetails(@RequestBody VigyanKendraDetailsRequestDTO requestDTO) {
+    @PostMapping(produces = "application/json", consumes = "application/json")
+    public VigyanKendraDetailsRequestDTO createVigyanKendraDetails(@RequestBody VigyanKendraDetailsRequestDTO requestDTO) {
         return service.createVigyanKendra(requestDTO);
     }
 
-    @GetMapping("/schools/{id}")
-    public Set<SchoolDetailsResponseDto> getSchoolsByCode(@PathVariable Long id) {
+    @GetMapping(path = "/schools/{id}", produces = "application/json")
+    public Set<SchoolDetailsResponseDto> getSchoolsByVigyanKendraId(@PathVariable Long id) {
         return service.getSchoolDetailsListByVigyanKendraById(id);
+    }
+
+    @GetMapping(path = "/users/{id}", produces = "application/json")
+    public Set<UserDetails> getUsersByVigyanKendraId(@PathVariable Long id) {
+        return service.getUserDetailsListByVigyanKendraById(id);
+    }
+
+    @PutMapping(produces = "application/json", consumes = "application/json")
+    public VigyanKendraDetailsRequestDTO updateVigyanKendraDetails(@RequestBody VigyanKendraDetailsRequestDTO requestDTO) {
+        return service.updateVigyanKendra(requestDTO);
+    }
+
+    @DeleteMapping
+    public void deleteVigyanKendraById(Long id) {
+        service.deleteVigyanKendraById(id);
     }
 }

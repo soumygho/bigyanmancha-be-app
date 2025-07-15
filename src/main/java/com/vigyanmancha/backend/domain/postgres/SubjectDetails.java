@@ -20,4 +20,8 @@ public class SubjectDetails extends Auditable {
 
     @ManyToMany(mappedBy = "subjects", fetch = FetchType.LAZY)
     private Set<StudentClass> studentClasses;
+
+    @ManyToOne
+    @JoinColumn(name = "enrollment_session_id", nullable = false)
+    private EnrollmentSession enrollmentSession;
 }

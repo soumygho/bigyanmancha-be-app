@@ -20,6 +20,7 @@ import java.util.List;
 @Tag(name = "Student Marks API", description = "Endpoints for managing marks awarded to students for specific subjects.")
 @RestController
 @RequestMapping("/api/student-marks")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class StudentMarksController {
     private final StudentMarksService service;
@@ -31,7 +32,7 @@ public class StudentMarksController {
             @ApiResponse(responseCode = "400", description = "Validation error", content = @Content)
     })
     @PostMapping
-    public ResponseEntity<StudentMarksRequestDTO> create(
+    public ResponseEntity<StudentMarksRequestDTO> createMarks(
             @Valid @RequestBody
             @Parameter(description = "StudentMarks DTO with studentId, subjectId, marks, and maximumMarks")
             StudentMarksRequestDTO dto) {
@@ -41,7 +42,7 @@ public class StudentMarksController {
     @Operation(summary = "Get all StudentMarks", description = "Returns a list of all student marks records.")
     @ApiResponse(responseCode = "200", description = "List retrieved successfully")
     @GetMapping
-    public ResponseEntity<List<StudentMarksRequestDTO>> getAll() {
+    public ResponseEntity<List<StudentMarksRequestDTO>> getAllMarks() {
         return ResponseEntity.ok(service.getAll());
     }
 
@@ -51,7 +52,7 @@ public class StudentMarksController {
             @ApiResponse(responseCode = "404", description = "Record not found", content = @Content)
     })
     @GetMapping("/{id}")
-    public ResponseEntity<StudentMarksRequestDTO> getById(
+    public ResponseEntity<StudentMarksRequestDTO> getMarksById(
             @Parameter(description = "ID of the StudentMarks record to retrieve")
             @PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
@@ -63,7 +64,7 @@ public class StudentMarksController {
             @ApiResponse(responseCode = "404", description = "Record not found", content = @Content)
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
+    public ResponseEntity<Void> deleteMarks(
             @Parameter(description = "ID of the StudentMarks record to delete")
             @PathVariable Long id) {
         service.deleteById(id);

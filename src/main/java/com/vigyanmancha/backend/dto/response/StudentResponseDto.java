@@ -5,7 +5,8 @@ import lombok.Data;
 public class StudentResponseDto {
     private Long id;
     private String name;
-    private String rollNumber;
+    private String roll;
+    private String number;
     private Long schoolId;
     private String schoolName;
     private Long vigyanKendraId;

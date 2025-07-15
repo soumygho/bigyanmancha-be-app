@@ -31,4 +31,8 @@ public class StudentMarks extends Auditable {
     @ManyToOne(optional = false)
     @JoinColumn(name = "subject_id")
     private SubjectDetails subject;
+
+    @ManyToOne
+    @JoinColumn(name = "enrollment_session_id", nullable = false)
+    private EnrollmentSession enrollmentSession;
 }

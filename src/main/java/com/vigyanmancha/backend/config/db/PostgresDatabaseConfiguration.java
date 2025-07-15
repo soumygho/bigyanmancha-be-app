@@ -1,9 +1,12 @@
 package com.vigyanmancha.backend.config.db;
 
+import com.vigyanmancha.backend.migrations.ApplicationContextHolder;
 import liquibase.integration.spring.SpringLiquibase;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -21,10 +24,12 @@ import javax.sql.DataSource;
         entityManagerFactoryRef = "postgresEntityManager",
         transactionManagerRef = "postgresTransactionManager"
 )
+@RequiredArgsConstructor
 public class PostgresDatabaseConfiguration {
+    private final ApplicationContext applicationContext;
     @Primary
     @Bean
-    @ConfigurationProperties(prefix="spring.datasource")
+    @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource postgresDataSource() {
         return DataSourceBuilder.create().build();
     }
@@ -60,6 +65,7 @@ public class PostgresDatabaseConfiguration {
 
     @Bean(name="liquibase")
     public SpringLiquibase postgresLiquibase() {
+        ApplicationContextHolder.setApplicationContext(applicationContext);
         return springLiquibase(postgresDataSource(), postgresLiquibaseProperties());
     }
 

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -28,7 +29,11 @@ public class ExaminationCentreDetails extends Auditable {
     @JoinColumn(name = "vigyankendra_id")
     private VigyanKendraDetails vigyanKendraDetails;
 
+    @ManyToOne
+    @JoinColumn(name = "enrollment_session_id", nullable = false)
+    private EnrollmentSession enrollmentSession;
+
     @OneToMany(mappedBy = "examinationCentre", cascade = CascadeType.ALL)
-    private List<SchoolDetails> schools;  // One-to-many relationship with SchoolDetails
+    private Set<SchoolDetails> schools;  // One-to-many relationship with SchoolDetails
 }
 

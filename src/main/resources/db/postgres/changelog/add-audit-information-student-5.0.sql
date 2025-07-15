@@ -1,0 +1,4 @@
+ALTER TABLE student ADD created_by VARCHAR(255);
+ALTER TABLE student ADD created_date TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE student ADD modified_by   VARCHAR(255);
+ALTER TABLE student ADD modified_date TIMESTAMP WITHOUT TIME ZONE;

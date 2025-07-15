@@ -1,3 +1,17 @@
 databaseChangeLog:
   - include:
       file: db/postgres/changelog/init-schemas-1.0.sql
+  - include:
+      file: db/postgres/changelog/add-audit-information-2.0.sql
+  - include:
+      file: db/postgres/changelog/add-user-roles-3.0.sql
+  - include:
+      file: db/postgres/changelog/add-default-role-admin-user-4.0.sql
+  - include:
+      file: db/postgres/changelog/add-audit-information-student-5.0.sql
+  - include:
+      file: db/postgres/changelog/add-roll-number-column-6.0.sql
+  - include:
+      file: db/postgres/changelog/add-user-role-schema-7.0.sql
+  - include:
+      file: db/postgres/changelog/add-enrollment-session-8.0.sql

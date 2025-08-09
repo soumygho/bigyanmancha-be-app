@@ -11,5 +11,7 @@ public class SchoolDetailsRequestDTO {
     private Long examCentreId; // The ID of the associated ExaminationCentreDetails
     private String vigyanKendraName;
     private String examCentreName;
+    private Long enrollmentId;
+    private int enrollmentYear;
 }
 

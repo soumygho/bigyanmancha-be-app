@@ -4,6 +4,8 @@ import com.vigyanmancha.backend.domain.Auditable;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -29,5 +31,7 @@ public class SchoolDetails extends Auditable {
     @ManyToOne
     @JoinColumn(name = "enrollment_session_id", nullable = false)
     private EnrollmentSession enrollmentSession;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, mappedBy = "schoolDetails")
+    private Set<Student> students;
 }
 

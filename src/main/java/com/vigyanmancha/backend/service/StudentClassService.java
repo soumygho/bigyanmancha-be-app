@@ -4,6 +4,7 @@ import com.vigyanmancha.backend.domain.postgres.StudentClass;
 import com.vigyanmancha.backend.domain.postgres.SubjectDetails;
 import com.vigyanmancha.backend.dto.request.StudentClassRequestDTO;
 import com.vigyanmancha.backend.dto.response.StudentClassDetailsResponseDto;
+import com.vigyanmancha.backend.exceptions.ConflictException;
 import com.vigyanmancha.backend.repository.postgres.StudentClassRepository;
 import com.vigyanmancha.backend.repository.postgres.SubjectDetailsRepository;
 import com.vigyanmancha.backend.utility.mapper.StudentClassMapper;
@@ -46,21 +47,37 @@ public class StudentClassService {
     }
 
     public StudentClassDetailsResponseDto create(StudentClassRequestDTO dto) {
+        if (checkUniqueName(dto.getName())) {
+            throw new ConflictException("Class name should be unique.");
+        }
         StudentClass studentClass = new StudentClass();
         studentClass.setName(dto.getName());
         return toDto(studentClassRepository.save(studentClass));
     }
 
     public StudentClassDetailsResponseDto update(StudentClassRequestDTO dto) {
-        log.info(dto.toString());
         if (CollectionUtils.isEmpty(dto.getSubjectIds())) {
             dto.setSubjectIds(Collections.emptyList());
         }
         StudentClass studentClass = studentClassRepository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Student class not found"));
+        if (checkUniqueNameForUpdate(dto.getName(), dto.getId())) {
+            throw new ConflictException("Class name should be unique.");
+        }
         Set<SubjectDetails> subjectDetailsList = new HashSet<>(subjectDetailsRepository.findAllById(dto.getSubjectIds()));
         studentClass.setName(dto.getName());
         studentClass.setSubjects(subjectDetailsList);
         return toDto(studentClassRepository.save(studentClass));
+    }
+
+    private boolean checkUniqueName(String name) {
+        return studentClassRepository.findAll()
+                .stream().anyMatch(record -> name.equalsIgnoreCase(record.getName()));
+    }
+
+    private boolean checkUniqueNameForUpdate(String name, Long id) {
+        return studentClassRepository.findAll()
+                .stream().anyMatch(record -> !Objects.equals(id, record.getId())
+                        && name.equalsIgnoreCase(record.getName()));
     }
 }

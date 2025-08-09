@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Auth api")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS})
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
@@ -47,15 +47,15 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUserName(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtils.generateJwtToken(authentication);
+
         var userDetails = (UserDetailsImpl) authentication.getPrincipal();
         var roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
+
         UserDetails userDetailsEntity = userDetailsRepository.findByUserName(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Error: User is not found."));
         var jwtResponse = new JwtResponse();
-        jwtResponse.setJwt(jwt);
         jwtResponse.setRoles(roles);
         jwtResponse.setId(userDetails.getId());
         jwtResponse.setUserName(userDetails.getUsername());
@@ -74,7 +74,8 @@ public class AuthController {
             jwtResponse.setVigyanKendraName(vigyanKendraDetails.getName());
             jwtResponse.setVigyanKendraCode(vigyanKendraDetails.getCode());
         }
-
+        String jwt = jwtUtils.generateJwtToken(authentication, jwtResponse);
+        jwtResponse.setJwt(jwt);
         return jwtResponse;
     }
 

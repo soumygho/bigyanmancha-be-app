@@ -16,6 +16,8 @@ public class ExaminationCentreDetailsRequestDTO {
     private String vigyanKendraName;
     private String vigyanKendraCode;
     private String schoolName;
+    private Long enrollmentId;
+    private int enrollmentYear;
 }
 
 

@@ -17,4 +17,7 @@ public class StudentResponseDto {
     //optional
     private Long examinationCentreId;
     private String examinationCentreName;
+    //enrolment session
+    private Long enrollmentId;
+    private int enrollmentYear;
 }

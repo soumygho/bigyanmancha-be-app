@@ -1,12 +1,7 @@
 package com.vigyanmancha.backend.dto.response;
+import com.vigyanmancha.backend.dto.request.SchoolDetailsRequestDTO;
 import lombok.Data;
 
 @Data
-public class SchoolDetailsResponseDto {
-    private Long id;
-    private String name;
-    private Long vigyanKendraId;
-    private String vigyanKendraName;
-    private Long examinationCentreId;
-    private String examinationCentreName;
+public class SchoolDetailsResponseDto extends SchoolDetailsRequestDTO {
 }

@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/postgres/changelog/add-user-role-schema-7.0.sql
   - include:
       file: db/postgres/changelog/add-enrollment-session-8.0.sql
+  - include:
+     file: db/postgres/changelog/add-reporting-schema-9.0.sql

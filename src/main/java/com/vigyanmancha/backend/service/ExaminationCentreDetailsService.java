@@ -1,5 +1,6 @@
 package com.vigyanmancha.backend.service;
 
+import com.vigyanmancha.backend.domain.postgres.EnrollmentSession;
 import com.vigyanmancha.backend.domain.postgres.ExaminationCentreDetails;
 import com.vigyanmancha.backend.domain.postgres.SchoolDetails;
 import com.vigyanmancha.backend.domain.postgres.VigyanKendraDetails;
@@ -8,6 +9,8 @@ import com.vigyanmancha.backend.dto.request.SchoolAssignDeAssignRequest;
 import com.vigyanmancha.backend.repository.postgres.ExaminationCentreDetailsRepository;
 import com.vigyanmancha.backend.repository.postgres.SchoolDetailsRepository;
 import com.vigyanmancha.backend.repository.postgres.VigyanKendraRepository;
+import com.vigyanmancha.backend.utility.auth.RoleUtility;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -16,22 +19,21 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ExaminationCentreDetailsService {
-
-    @Autowired
-    private ExaminationCentreDetailsRepository repository;
-
-    @Autowired
-    private SchoolDetailsRepository schoolDetailsRepository;
-
-    @Autowired
-    private VigyanKendraRepository vigyanKendraRepository;
+    private final ExaminationCentreDetailsRepository repository;
+    private final SchoolDetailsRepository schoolDetailsRepository;
+    private final VigyanKendraRepository vigyanKendraRepository;
+    private final VigyanKendraDetailsService vigyanKendraDetailsService;
+    private final EnrollmentSessionService enrollmentSessionService;
 
     // Create ExaminationCentreDetails
     public ExaminationCentreDetailsRequestDTO create(ExaminationCentreDetailsRequestDTO dto) {
+        validateVigyanKendraUserPermission(dto.getVigyanKendraId());
+        EnrollmentSession enrollmentSession = enrollmentSessionService.validateAndGetEnrollmentSessionForCreate();
         ExaminationCentreDetails entity = new ExaminationCentreDetails();
         entity.setName(dto.getName());
-
+        entity.setEnrollmentSession(enrollmentSession);
         // Set the details field (one-to-one with SchoolDetails)
         SchoolDetails details = schoolDetailsRepository.findById(dto.getSchoolDetailsId())
                 .orElseThrow(() -> new RuntimeException("School details not found"));
@@ -49,22 +51,24 @@ public class ExaminationCentreDetailsService {
     public List<ExaminationCentreDetailsRequestDTO> getAll() {
         return repository.findAll()
                 .stream()
-                .map(this::toDto)
+                .map(ExaminationCentreDetailsService::toDto)
                 .collect(Collectors.toList());
     }
 
     // Get ExaminationCentreDetails by id
     public ExaminationCentreDetailsRequestDTO getById(Long id) {
         return repository.findById(id)
-                .map(this::toDto)
+                .map(ExaminationCentreDetailsService::toDto)
                 .orElseThrow(() -> new RuntimeException("Examination Centre not found"));
     }
 
     // Convert entity to DTO
-    private ExaminationCentreDetailsRequestDTO toDto(ExaminationCentreDetails entity) {
+    public static ExaminationCentreDetailsRequestDTO toDto(ExaminationCentreDetails entity) {
         ExaminationCentreDetailsRequestDTO dto = new ExaminationCentreDetailsRequestDTO();
         dto.setId(entity.getId());
         dto.setName(entity.getName());
+        dto.setEnrollmentId(entity.getEnrollmentSession().getId());
+        dto.setEnrollmentYear(entity.getEnrollmentSession().getYear());
         if (Objects.nonNull(entity.getDetails())) {
             dto.setSchoolName(entity.getDetails().getName());
             dto.setSchoolDetailsId(entity.getDetails().getId());
@@ -141,6 +145,15 @@ public class ExaminationCentreDetailsService {
             throw new RuntimeException("Examination Centre not found");
         }
         repository.deleteById(id);
+    }
+
+    private void validateVigyanKendraUserPermission(Long id) {
+        if (RoleUtility.isVigyanKendraUser()) {
+            var vigyanKendraDetails = vigyanKendraDetailsService.getVigyanKendraFromAuth();
+            if (!Objects.equals(id, vigyanKendraDetails.getId())) {
+                throw new RuntimeException("Not authorized to do any action.");
+            }
+        }
     }
 }
 

@@ -1,10 +1,13 @@
 package com.vigyanmancha.backend.domain.postgres;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.Set;
 
 @Entity
 @Getter
@@ -26,4 +29,19 @@ public class EnrollmentSession {
     private  boolean enrollmentFreezed;
     @Column(name = "modification_freezed")
     private boolean modificationFreezed;
+
+    @OneToMany(mappedBy = "enrollmentSession", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<SchoolDetails> schoolDetails;
+
+    @OneToMany(mappedBy = "enrollmentSession", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<Student> students;
+
+    @OneToMany(mappedBy = "enrollmentSession", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<ExaminationCentreDetails> examinationCentres;
+    @OneToMany(mappedBy = "enrollmentSession", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<SubjectDetails> subjects;
 }

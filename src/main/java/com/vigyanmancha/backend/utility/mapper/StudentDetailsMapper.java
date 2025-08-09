@@ -21,5 +21,10 @@ public interface StudentDetailsMapper {
 
     @Mapping(target = "examinationCentreName",
             expression = "java(student.getSchoolDetails().getExaminationCentre() != null ? student.getSchoolDetails().getExaminationCentre().getName() : \"\")")
+    @Mapping(target = "enrollmentId",
+            expression = "java(student.getEnrollmentSession().getId())")
+    @Mapping(target = "enrollmentYear",
+            expression = "java(student.getEnrollmentSession().getYear())")
     StudentResponseDto mapFromEntity(Student student);
+
 }

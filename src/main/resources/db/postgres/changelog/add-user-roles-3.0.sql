@@ -30,4 +30,4 @@ ALTER TABLE user_details
     ADD CONSTRAINT uc_user_details_user_name UNIQUE (user_name);
 
 ALTER TABLE user_details
-    ADD CONSTRAINT FK_USER_DETAILS_ON_KENDRA FOREIGN KEY (kendra_id) REFERENCES vigyan_kendra_details (id);
+    ADD CONSTRAINT FK_USER_DETAILS_ON_KENDRA FOREIGN KEY (kendra_id) REFERENCES vigyan_kendra_details (id) ON DELETE CASCADE;

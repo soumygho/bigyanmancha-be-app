@@ -1,5 +1,6 @@
 package com.vigyanmancha.backend.controller;
 
+import com.vigyanmancha.backend.annotation.AdminUser;
 import com.vigyanmancha.backend.domain.postgres.Role;
 import com.vigyanmancha.backend.domain.postgres.UserDetails;
 import com.vigyanmancha.backend.dto.response.SignupRequest;
@@ -11,7 +12,6 @@ import com.vigyanmancha.backend.service.VigyanKendraDetailsService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Tag(name = "User management api")
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS})
 @RequiredArgsConstructor
 public class UserController {
     private final UserDetailsRepository userRepository;
@@ -54,7 +54,7 @@ public class UserController {
     }
 
     @PostMapping(produces = "application/json", consumes = "application/json")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @AdminUser
     public UserDetailsResponseDto registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByUserName(signUpRequest.getUserName())) {
             throw new RuntimeException("Error: Username is already taken!");
@@ -74,15 +74,15 @@ public class UserController {
     }
 
     @GetMapping(path = "/{id}", produces = "application/json")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @AdminUser
     public UserDetailsResponseDto getUser(@PathVariable Long id) {
         var user =  userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return toDto(user);
     }
 
-    @PutMapping(path = "/{id}", produces = "application/json", consumes = "application/json")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping(produces = "application/json", consumes = "application/json")
+    @AdminUser
     public UserDetailsResponseDto updateUser(@Valid @RequestBody SignupRequest signUpRequest) {
         var user =  userRepository.findById(signUpRequest.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -98,7 +98,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @AdminUser
     public void deleteUser(@PathVariable Long id) {
         var user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));

@@ -1,5 +1,7 @@
 package com.vigyanmancha.backend.controller;
 
+import com.vigyanmancha.backend.annotation.AdminOrVigyankendraOrSchoolUser;
+import com.vigyanmancha.backend.annotation.AdminUser;
 import com.vigyanmancha.backend.dto.request.StudentMarksRequestDTO;
 import com.vigyanmancha.backend.service.StudentMarksService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +22,7 @@ import java.util.List;
 @Tag(name = "Student Marks API", description = "Endpoints for managing marks awarded to students for specific subjects.")
 @RestController
 @RequestMapping("/api/student-marks")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS})
 @RequiredArgsConstructor
 public class StudentMarksController {
     private final StudentMarksService service;
@@ -32,6 +34,7 @@ public class StudentMarksController {
             @ApiResponse(responseCode = "400", description = "Validation error", content = @Content)
     })
     @PostMapping
+    @AdminUser
     public ResponseEntity<StudentMarksRequestDTO> createMarks(
             @Valid @RequestBody
             @Parameter(description = "StudentMarks DTO with studentId, subjectId, marks, and maximumMarks")
@@ -42,6 +45,7 @@ public class StudentMarksController {
     @Operation(summary = "Get all StudentMarks", description = "Returns a list of all student marks records.")
     @ApiResponse(responseCode = "200", description = "List retrieved successfully")
     @GetMapping
+    @AdminOrVigyankendraOrSchoolUser
     public ResponseEntity<List<StudentMarksRequestDTO>> getAllMarks() {
         return ResponseEntity.ok(service.getAll());
     }
@@ -52,6 +56,7 @@ public class StudentMarksController {
             @ApiResponse(responseCode = "404", description = "Record not found", content = @Content)
     })
     @GetMapping("/{id}")
+    @AdminOrVigyankendraOrSchoolUser
     public ResponseEntity<StudentMarksRequestDTO> getMarksById(
             @Parameter(description = "ID of the StudentMarks record to retrieve")
             @PathVariable Long id) {
@@ -63,6 +68,7 @@ public class StudentMarksController {
             @ApiResponse(responseCode = "204", description = "Deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Record not found", content = @Content)
     })
+    @AdminUser
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMarks(
             @Parameter(description = "ID of the StudentMarks record to delete")

@@ -20,16 +20,16 @@ public class VigyanKendraDetails extends Auditable {
     private String name;
     private String code;
 
-    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<SchoolDetails> schoolDetails;
 
-    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<Student> students;
 
-    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<ExaminationCentreDetails> examinationCentres;
 
-    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vigyanKendraDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<UserDetails> users;
 }
 

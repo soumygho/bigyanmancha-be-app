@@ -17,4 +17,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     int getCountByStudentRollAndNumber(@Param("roll") String studentRoll, @Param("number") String studentNumber);
     @Query("SELECT s FROM Student s where s.roll = :roll AND s.number = :number")
     Student getByStudentRollAndNumber(@Param("roll") String studentRoll, @Param("number") String studentNumber);
+    @Query("SELECT s FROM Student s where s.vigyanKendraDetails.id = :vigyanKendraId")
+    List<Student> findByVigyanKendra(@Param("vigyanKendraId") long id);
 }

@@ -33,7 +33,7 @@ public class ExaminationCentreDetails extends Auditable {
     @JoinColumn(name = "enrollment_session_id", nullable = false)
     private EnrollmentSession enrollmentSession;
 
-    @OneToMany(mappedBy = "examinationCentre", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "examinationCentre")
     private Set<SchoolDetails> schools;  // One-to-many relationship with SchoolDetails
 }
 

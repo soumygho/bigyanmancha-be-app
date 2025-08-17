@@ -49,6 +49,14 @@ public class ExaminationCentreDetailsService {
 
     // Get all ExaminationCentreDetails
     public List<ExaminationCentreDetailsRequestDTO> getAll() {
+        if (RoleUtility.isVigyanKendraUser()) {
+            var vigyanKendraDetails = vigyanKendraDetailsService.getVigyanKendraFromAuth();
+            return repository.findAll()
+                    .stream()
+                    .filter(examCenter -> Objects.equals(examCenter.getVigyanKendraDetails().getId(), vigyanKendraDetails.getId()))
+                    .map(ExaminationCentreDetailsService::toDto)
+                    .collect(Collectors.toList());
+        }
         return repository.findAll()
                 .stream()
                 .map(ExaminationCentreDetailsService::toDto)
@@ -93,6 +101,7 @@ public class ExaminationCentreDetailsService {
 
     // Update ExaminationCentreDetails
     public ExaminationCentreDetailsRequestDTO update(Long id, ExaminationCentreDetailsRequestDTO dto) {
+        validateVigyanKendraUserPermission(dto.getVigyanKendraId());
         ExaminationCentreDetails existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Examination Centre not found"));
 
@@ -144,6 +153,9 @@ public class ExaminationCentreDetailsService {
         if (!repository.existsById(id)) {
             throw new RuntimeException("Examination Centre not found");
         }
+        var examCenter = repository.findById(id)
+                .orElseThrow(() ->  new RuntimeException("Examination Centre not found"));
+        validateVigyanKendraUserPermission(examCenter.getVigyanKendraDetails().getId());
         repository.deleteById(id);
     }
 

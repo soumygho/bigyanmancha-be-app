@@ -18,4 +18,16 @@ public class AsyncConfig {
                 new ThreadPoolExecutor.AbortPolicy()  // Rejection policy
         );
     }
+
+    @Bean(name = "taskExecutor")
+    public ExecutorService taskExecutorService() {
+        return new ThreadPoolExecutor(
+                1,                   // core pool size
+                1,                   // max pool size
+                30, TimeUnit.SECONDS,// idle thread keep-alive time
+                new java.util.concurrent.LinkedBlockingQueue<>(),  // task queue
+                Executors.defaultThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()  // Rejection policy
+        );
+    }
 }

@@ -5,6 +5,7 @@ import com.vigyanmancha.backend.dto.request.SchoolDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.request.StudentClassRequestDTO;
 import com.vigyanmancha.backend.dto.request.StudentRequestDTO;
 import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
+import com.vigyanmancha.backend.dto.response.EnrollmentCountResponse;
 import com.vigyanmancha.backend.dto.response.StudentResponseDto;
 import com.vigyanmancha.backend.repository.postgres.SchoolDetailsRepository;
 import com.vigyanmancha.backend.repository.postgres.StudentClassRepository;
@@ -16,9 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,19 +77,17 @@ public class StudentService {
                         .orElseThrow(() -> new RuntimeException("School details not found"));
         StudentClass studentClass = studentClassRepository.findById(dto.getStudentClassId())
                 .orElseThrow(() -> new RuntimeException("Class details not found"));
-        synchronized (lock) {
-            Student entity = new Student();
-            entity.setName(dto.getName());
-            entity.setSex(dto.getSex());
-            entity.setSchoolDetails(school);
-            entity.setStudentClass(studentClass);
-            entity.setRoll(generateRoll(studentClass, vigyanKendraDetails));
-            entity.setNumber(generateNumber(studentClass));
-            entity.setVigyanKendraDetails(vigyanKendraDetails);
-            entity.setEnrollmentSession(enrollmentSession);
-            entity = studentRepository.save(entity);
-            return StudentDetailsMapper.studentDetailsMapper.mapFromEntity(entity);
-        }
+        Student entity = new Student();
+        entity.setName(dto.getName());
+        entity.setSex(dto.getSex());
+        entity.setSchoolDetails(school);
+        entity.setStudentClass(studentClass);
+        entity.setRoll(generateRoll(studentClass, vigyanKendraDetails));
+        entity.setNumber("NA");
+        entity.setVigyanKendraDetails(vigyanKendraDetails);
+        entity.setEnrollmentSession(enrollmentSession);
+        entity = studentRepository.save(entity);
+        return StudentDetailsMapper.studentDetailsMapper.mapFromEntity(entity);
     }
 
     public StudentResponseDto update(StudentRequestDTO dto) {
@@ -104,13 +105,8 @@ public class StudentService {
         entity.setSex(dto.getSex());
         entity.setSchoolDetails(school);
         entity.setStudentClass(studentClass);
-        if (Objects.nonNull(dto.getRollNumber())) {
-            if (studentRepository.getCountByStudentRollAndNumber(entity.getRoll(), dto.getRollNumber().toString()) > 0
-                    && !Objects.equals(studentRepository.getByStudentRollAndNumber(entity.getRoll(), dto.getRollNumber().toString()).getId(), entity.getId())) {
-                throw new RuntimeException("Roll number already exists");
-            }
-            entity.setNumber(String.format("%04d", dto.getRollNumber()));
-        }
+        entity.setRoll(generateRoll(studentClass, vigyanKendraDetails));
+        entity.setNumber("NA");
         entity.setVigyanKendraDetails(vigyanKendraDetails);
         return StudentDetailsMapper.studentDetailsMapper.mapFromEntity(studentRepository.save(entity));
     }
@@ -127,7 +123,8 @@ public class StudentService {
         return vigyanKendraDetails.getCode() + "/" + studentClass.getName();
     }
 
-    private synchronized String generateNumber(StudentClass studentClass) {
+    //will be needed in batch processing
+    private String generateNumber(StudentClass studentClass) {
         int count = studentRepository.countAllByStudentClass(studentClass);
         ++count;
         return String.format("%04d", count);
@@ -140,6 +137,11 @@ public class StudentService {
                 throw new RuntimeException("Not authorized to do any action.");
             }
         }
+    }
+
+    public EnrollmentCountResponse countAllEnrollments() {
+        return EnrollmentCountResponse.builder()
+                .build();
     }
 
     public void generateDummyData() {
@@ -166,6 +168,30 @@ public class StudentService {
                 log.info("Added student with name {}", studentDto.getName());
             }
         });
+    }
+
+    public void assignRollNumber(Long classId) {
+
+    }
+
+    private void assignRollNumberAsynchronously(Long classId) {
+        EnrollmentSession enrollmentSession =
+                enrollmentSessionService.validateAndGetEnrollmentSessionForCreate();
+        StudentClass studentClass = studentClassRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class details not found"));
+        List<Student> studentList = studentRepository
+                .findByClassAndEnrollmentSession(studentClass, enrollmentSession);
+        AtomicInteger number = new AtomicInteger();
+        studentList = studentList.stream()
+                .sorted(
+                        Comparator.comparing((Student student) -> student.getVigyanKendraDetails().getCode())
+                                .thenComparing(Student::getName))
+                .map(student -> {
+                    student.setNumber(String.format("%04d", number.incrementAndGet()));
+                    return student;
+                })
+                .collect(Collectors.toUnmodifiableList());
+        studentRepository.saveAll(studentList);
     }
 }
 

@@ -27,11 +27,12 @@ public class StudentController {
         return studentService.getAll();
     }
 
-    @GetMapping(path="/vigyan-kendra/{id}",produces = "application/json")
+    @GetMapping(path = "/vigyan-kendra/{id}", produces = "application/json")
     @AdminUser
     public List<StudentResponseDto> getAllStudentsByVigyanKendraId(@PathVariable Long id) {
         return studentService.getAllByVigyanKendraId(id);
     }
+
     @GetMapping(path = "/{id}", produces = "application/json")
     @AdminOrVigyankendraUser
     public StudentResponseDto getStudentById(@PathVariable Long id) {
@@ -57,8 +58,14 @@ public class StudentController {
     }
 
 
-    @GetMapping(path = "/generate")
+    /*@GetMapping(path = "/generate")
     public String generateDummyData() {
+        studentService.generateDummyData();
+        return "Started generating the data";
+    }*/
+
+    @GetMapping(path = "/assign-roll-number/{classId}")
+    public String assignRollNumber(@PathVariable("classId") Long classId) {
         studentService.generateDummyData();
         return "Started generating the data";
     }

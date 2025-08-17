@@ -5,11 +5,15 @@ import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.response.EnrollmentReportingResponse;
 import com.vigyanmancha.backend.dto.response.StudentResponseDto;
 import com.vigyanmancha.backend.repository.postgres.ReportDetailsRepository;
+import com.vigyanmancha.backend.utility.DateUtility;
 import com.vigyanmancha.backend.utility.auth.RoleUtility;
 import jakarta.annotation.PreDestroy;
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
@@ -18,13 +22,11 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ReportingService {
     private final StudentService studentService;
@@ -73,11 +75,9 @@ public class ReportingService {
         try {
             excelStorageService.deleteExcel(reportDetails.getReportKey());
             reportDetailsRepository.delete(reportDetails);
-        }
-        catch (NoSuchKeyException noSuchKeyException) {
+        } catch (NoSuchKeyException noSuchKeyException) {
             reportDetailsRepository.delete(reportDetails);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Unable to delete report with key {} {}", reportDetails.getReportKey(), e.getMessage());
             throw new RuntimeException("Unable to delete report.");
         }
@@ -88,7 +88,7 @@ public class ReportingService {
                 vigyanKendraDetailsService.getVigyanKendraById(vigyanKendraId);
         var reportDetails = new ReportDetails();
         reportDetails.setReportKey(UUID.randomUUID().toString());
-        reportDetails.setReportDate(getCurrentTime());
+        reportDetails.setReportDate(DateUtility.getCurrentTime());
         reportDetails.setVigyanKendraCode(vigyanKendra.getCode());
         reportDetails.setVigyanKendraName(vigyanKendra.getName());
         reportDetails.setStatus(STATUS_PENDING);
@@ -150,18 +150,6 @@ public class ReportingService {
         }
     }
 
-    private String getCurrentTime() {
-        // Get current date-time
-        LocalDateTime now = LocalDateTime.now();
-
-        // Define the formatter
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-
-        // Format the date-time
-        String formattedDateTime = now.format(formatter);
-        return formattedDateTime;
-    }
-
     private EnrollmentReportingResponse mapFrom(ReportDetails reportDetails) {
         var response = new EnrollmentReportingResponse();
         response.setId(reportDetails.getId());
@@ -185,6 +173,21 @@ public class ReportingService {
             reportExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+
+    @Autowired
+    public ReportingService(final StudentService studentService,
+                            final ExcelStorageService excelStorageService,
+                            final ReportDetailsRepository reportDetailsRepository,
+                            final VigyanKendraDetailsService vigyanKendraDetailsService,
+                            @Qualifier("reportExecutor") final ExecutorService reportExecutor,
+                            final EnrollmentSessionService enrollmentSessionService) {
+        this.studentService = studentService;
+        this.excelStorageService = excelStorageService;
+        this.reportDetailsRepository = reportDetailsRepository;
+        this.vigyanKendraDetailsService = vigyanKendraDetailsService;
+        this.reportExecutor = reportExecutor;
+        this.enrollmentSessionService = enrollmentSessionService;
     }
 
 }

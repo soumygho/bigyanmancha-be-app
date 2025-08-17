@@ -84,11 +84,9 @@ public class SchoolDetailsService {
         SchoolDetails existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SchoolDetails not found"));
         this.validateVigyanKendraUserPermission(existing);
-        if (Objects.equals(existing.getId(),
-                existing.getExaminationCentre().getDetails().getId())) {
-            existing.setExaminationCentre(null);
-            repository.save(existing);
-        }
+        //unassociate exam center first
+        existing.setExaminationCentre(null);
+        repository.save(existing);
         entityManager.detach(existing);
         existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SchoolDetails not found"));

@@ -10,7 +10,7 @@ public class StudentRequestDTO {
     private Long schoolId; // The ID of the associated SchoolDetails
     private Long vigyanKendraId; // The ID of the associated VigyanKendraDetails
     private Long studentClassId;
-    private Long rollNumber;
+    private String rollNumber;
 }
 
 

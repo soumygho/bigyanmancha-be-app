@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -25,8 +26,14 @@ public class ExaminationCentreDetailsController {
         return service.getAll();
     }
 
+    @GetMapping(path = "/vigyan-kendra/{vigyanKendraId}", produces = "application/json")
+    @AdminOrVigyankendraUser
+    public List<ExaminationCentreDetailsRequestDTO> getAllExamCentersByVigyanKendraId(@PathVariable("vigyanKendraId") Long vigyanKendraId) {
+        return service.getByVigyanKendra(vigyanKendraId);
+    }
+
     // Get ExaminationCentreDetails by id
-    @GetMapping(path="/{id}", produces = "application/json")
+    @GetMapping(path = "/{id}", produces = "application/json")
     @AdminOrVigyankendraUser
     public ExaminationCentreDetailsRequestDTO getExamCenterById(@PathVariable Long id) {
         return service.getById(id);
@@ -47,7 +54,7 @@ public class ExaminationCentreDetailsController {
     }
 
     // Delete ExaminationCentreDetails
-    @DeleteMapping(path="/{id}")
+    @DeleteMapping(path = "/{id}")
     @AdminOrVigyankendraUser
     public void deleteExamCenter(@PathVariable Long id) {
         service.delete(id);

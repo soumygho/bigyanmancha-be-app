@@ -6,6 +6,7 @@ import com.vigyanmancha.backend.domain.postgres.SchoolDetails;
 import com.vigyanmancha.backend.domain.postgres.VigyanKendraDetails;
 import com.vigyanmancha.backend.dto.request.ExaminationCentreDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.request.SchoolAssignDeAssignRequest;
+import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
 import com.vigyanmancha.backend.repository.postgres.ExaminationCentreDetailsRepository;
 import com.vigyanmancha.backend.repository.postgres.SchoolDetailsRepository;
 import com.vigyanmancha.backend.repository.postgres.VigyanKendraRepository;
@@ -51,13 +52,23 @@ public class ExaminationCentreDetailsService {
     public List<ExaminationCentreDetailsRequestDTO> getAll() {
         if (RoleUtility.isVigyanKendraUser()) {
             var vigyanKendraDetails = vigyanKendraDetailsService.getVigyanKendraFromAuth();
-            return repository.findAll()
-                    .stream()
-                    .filter(examCenter -> Objects.equals(examCenter.getVigyanKendraDetails().getId(), vigyanKendraDetails.getId()))
-                    .map(ExaminationCentreDetailsService::toDto)
-                    .collect(Collectors.toList());
+            return getByVigyanKendra(vigyanKendraDetails.getId());
         }
-        return repository.findAll()
+        /*return repository.findAll()
+                .stream()
+                .map(ExaminationCentreDetailsService::toDto)
+                .collect(Collectors.toList());*/
+        return Collections.emptyList();
+    }
+
+    public List<ExaminationCentreDetails> getByVigyanKendra(VigyanKendraDetails vigyanKendraDetails) {
+        return repository.getByVigyanKendra(vigyanKendraDetails);
+    }
+
+    public List<ExaminationCentreDetailsRequestDTO> getByVigyanKendra(Long vigyanKendraId) {
+        var vigyanKendraDetails = vigyanKendraRepository.findById(vigyanKendraId);
+        return repository.getByVigyanKendra(vigyanKendraDetails
+                .orElseThrow(() -> new RuntimeException("Vigyankendra not found")))
                 .stream()
                 .map(ExaminationCentreDetailsService::toDto)
                 .collect(Collectors.toList());
@@ -101,6 +112,7 @@ public class ExaminationCentreDetailsService {
 
     // Update ExaminationCentreDetails
     public ExaminationCentreDetailsRequestDTO update(Long id, ExaminationCentreDetailsRequestDTO dto) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         validateVigyanKendraUserPermission(dto.getVigyanKendraId());
         ExaminationCentreDetails existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Examination Centre not found"));
@@ -120,6 +132,7 @@ public class ExaminationCentreDetailsService {
     }
 
     public ExaminationCentreDetailsRequestDTO assignSchoolToExamCenter(SchoolAssignDeAssignRequest request) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         final ExaminationCentreDetails existing = repository.findById(request.getExaminationCentreId())
                 .orElseThrow(() -> new RuntimeException("Examination Centre not found"));
         request.getSchoolIds().forEach(schoolId -> {
@@ -134,6 +147,7 @@ public class ExaminationCentreDetailsService {
     }
 
     public ExaminationCentreDetailsRequestDTO deAssignSchoolToExamCenter(SchoolAssignDeAssignRequest request) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         ExaminationCentreDetails existing = repository.findById(request.getExaminationCentreId())
                 .orElseThrow(() -> new RuntimeException("Examination Centre not found"));
         Set<SchoolDetails> schoolDetailsSet = !CollectionUtils.isEmpty(existing.getSchools())
@@ -150,6 +164,7 @@ public class ExaminationCentreDetailsService {
 
     // Delete ExaminationCentreDetails
     public void delete(Long id) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         if (!repository.existsById(id)) {
             throw new RuntimeException("Examination Centre not found");
         }

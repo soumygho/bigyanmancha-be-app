@@ -10,5 +10,6 @@ public class EnrollmentReportingResponse {
     private String vigyanKendraCode;
     private String VigyanKendraName;
     private String reportDate;
+    private String reportName;
     private String status;
 }

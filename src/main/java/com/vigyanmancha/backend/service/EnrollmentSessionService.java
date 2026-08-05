@@ -4,14 +4,21 @@ import com.vigyanmancha.backend.domain.postgres.EnrollmentSession;
 import com.vigyanmancha.backend.repository.postgres.EnrollmentSessionRepository;
 import com.vigyanmancha.backend.utility.auth.RoleUtility;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 @Service
-@RequiredArgsConstructor
 public class EnrollmentSessionService {
     private final EnrollmentSessionRepository enrollmentSessionRepository;
+    private final ExecutorService taskExecutorService;
+
+    public EnrollmentSessionService(EnrollmentSessionRepository enrollmentSessionRepository, @Qualifier("taskExecutor") ExecutorService taskExecutorService) {
+        this.enrollmentSessionRepository = enrollmentSessionRepository;
+        this.taskExecutorService = taskExecutorService;
+    }
 
     public List<EnrollmentSession> getEnrollmentSessions() {
         return enrollmentSessionRepository.findAll();
@@ -26,7 +33,8 @@ public class EnrollmentSessionService {
         enrollmentSession.setEnrollmentFreezed(true);
         enrollmentSession.setModificationFreezed(true);
         enrollmentSession.setActive(false);
-        return enrollmentSessionRepository.save(enrollmentSession);
+        var currentEnrollment = enrollmentSessionRepository.save(enrollmentSession);
+        return currentEnrollment;
     }
 
     public EnrollmentSession updateEnrollmentSession(EnrollmentSession enrollmentSession) {
@@ -65,7 +73,7 @@ public class EnrollmentSessionService {
 
     public EnrollmentSession setEnrollmentFreezed(long id) {
         EnrollmentSession existing = getEnrollmentSession(id);
-        if(!existing.isActive()) {
+        if (!existing.isActive()) {
             throw new RuntimeException("Can't modify an inactive enrollmentSession");
         }
         existing.setEnrollmentFreezed(true);
@@ -74,7 +82,7 @@ public class EnrollmentSessionService {
 
     public EnrollmentSession setEnrollmentUnFreezed(long id) {
         EnrollmentSession existing = getEnrollmentSession(id);
-        if(!existing.isActive()) {
+        if (!existing.isActive()) {
             throw new RuntimeException("Can't modify an inactive enrollmentSession");
         }
         existing.setEnrollmentFreezed(false);
@@ -83,7 +91,7 @@ public class EnrollmentSessionService {
 
     public EnrollmentSession setModificationFreezed(long id) {
         EnrollmentSession existing = getEnrollmentSession(id);
-        if(!existing.isActive()) {
+        if (!existing.isActive()) {
             throw new RuntimeException("Can't modify an inactive enrollmentSession");
         }
         existing.setModificationFreezed(true);
@@ -92,7 +100,7 @@ public class EnrollmentSessionService {
 
     public EnrollmentSession setModificationUnFreezed(long id) {
         EnrollmentSession existing = getEnrollmentSession(id);
-        if(!existing.isActive()) {
+        if (!existing.isActive()) {
             throw new RuntimeException("Can't modify an inactive enrollmentSession");
         }
         existing.setModificationFreezed(false);
@@ -111,7 +119,7 @@ public class EnrollmentSessionService {
         if (RoleUtility.isVigyanKendraUser()) {
             if (session.isEnrollmentFreezed()) throw new RuntimeException("EnrollmentSession is already freezed");
         } else if (RoleUtility.isAdminUser()) {
-            if(!session.isActive()) throw new RuntimeException("EnrollmentSession is not active");
+            if (!session.isActive()) throw new RuntimeException("EnrollmentSession is not active");
         }
         return session;
     }
@@ -126,9 +134,10 @@ public class EnrollmentSessionService {
         }
         var session = activeEnrollmentSessions.get(0);
         if (RoleUtility.isVigyanKendraUser()) {
-            if (session.isModificationFreezed()) throw new RuntimeException("EnrollmentSession is already freezed for modification");
+            if (session.isModificationFreezed())
+                throw new RuntimeException("EnrollmentSession is already freezed for modification");
         } else if (RoleUtility.isAdminUser()) {
-            if(!session.isActive()) throw new RuntimeException("EnrollmentSession is not active");
+            if (!session.isActive()) throw new RuntimeException("EnrollmentSession is not active");
         }
         return session;
     }

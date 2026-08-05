@@ -2,7 +2,7 @@ package com.vigyanmancha.backend.service;
 
 import com.vigyanmancha.backend.domain.postgres.TaskDetails;
 import com.vigyanmancha.backend.domain.postgres.VigyanKendraDetails;
-import com.vigyanmancha.backend.repository.postgres.TaskDetailsRepository;
+//import com.vigyanmancha.backend.repository.postgres.TaskDetailsRepository;
 import com.vigyanmancha.backend.utility.DateUtility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +11,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 
-@Service
+//@Service
 @RequiredArgsConstructor
 @Slf4j
 public class TaskDetailsService {
-    private final TaskDetailsRepository taskDetailsRepository;
+    /*private final TaskDetailsRepository taskDetailsRepository;
 
     public TaskDetails createTask(String name,
                                   int enrollmentYear,
@@ -45,5 +45,5 @@ public class TaskDetailsService {
 
     public List<TaskDetails> getAllTasks() {
         return taskDetailsRepository.findAll();
-    }
+    }*/
 }

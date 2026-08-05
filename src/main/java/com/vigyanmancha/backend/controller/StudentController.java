@@ -9,7 +9,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/students")
@@ -64,10 +67,19 @@ public class StudentController {
         return "Started generating the data";
     }*/
 
-    @GetMapping(path = "/assign-roll-number/{classId}")
+    @GetMapping(path = "/assign-roll-number/{classId}", produces = "application/json", consumes = "application/json")
     public String assignRollNumber(@PathVariable("classId") Long classId) {
-        studentService.generateDummyData();
-        return "Started generating the data";
+        return "This is not implemented yet.";
+    }
+
+    @PostMapping(path = "/promote-students", produces = "application/json", consumes = "application/json")
+    @AdminOrVigyankendraUser
+    public List<StudentResponseDto> promoteStudentsToNextSession(@RequestBody Set<Long> studentIds) {
+        return studentService.promoteStudents(studentIds);
+    }
+
+    public void getStatisticsData() {
+
     }
 }
 

@@ -1,35 +1,37 @@
 package com.vigyanmancha.backend.service;
 
+import com.vigyanmancha.backend.domain.mysql.VigyanKendra;
 import com.vigyanmancha.backend.domain.postgres.*;
+import com.vigyanmancha.backend.dto.reporting.StatisticsReportDto;
 import com.vigyanmancha.backend.dto.request.SchoolDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.request.StudentClassRequestDTO;
 import com.vigyanmancha.backend.dto.request.StudentRequestDTO;
 import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.response.EnrollmentCountResponse;
 import com.vigyanmancha.backend.dto.response.StudentResponseDto;
-import com.vigyanmancha.backend.repository.postgres.SchoolDetailsRepository;
-import com.vigyanmancha.backend.repository.postgres.StudentClassRepository;
-import com.vigyanmancha.backend.repository.postgres.StudentRepository;
-import com.vigyanmancha.backend.repository.postgres.VigyanKendraRepository;
+import com.vigyanmancha.backend.repository.postgres.*;
 import com.vigyanmancha.backend.utility.auth.RoleUtility;
 import com.vigyanmancha.backend.utility.mapper.StudentDetailsMapper;
+import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.utils.Lists;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StudentService {
+    private final ExaminationCentreDetailsRepository examinationCentreDetailsRepository;
     //this will only work for single deployment
-    private final Object lock = new Object();
     private final StudentRepository studentRepository;
     private final SchoolDetailsRepository schoolDetailsRepository;
     private final StudentClassRepository studentClassRepository;
@@ -38,17 +40,50 @@ public class StudentService {
     private final EnrollmentSessionService enrollmentSessionService;
     private final SchoolDetailsService schoolDetailsService;
     private final StudentClassService studentClassService;
+    private final ExaminationCentreDetailsService examinationCentreDetailsService;
+    private final Map<String, Integer> weightedClass = new HashMap<>();
+    private final Map<Integer, String> reverseWeightedClass = new HashMap<>();
 
+    @PostConstruct
+    void populateWeightedClass() {
+        weightedClass.put("I", 1);
+        weightedClass.put("II", 2);
+        weightedClass.put("III", 3);
+        weightedClass.put("IV", 4);
+        weightedClass.put("V", 5);
+        weightedClass.put("VI", 6);
+        weightedClass.put("VII", 7);
+        weightedClass.put("VIII", 8);
+        weightedClass.put("IX", 9);
+        weightedClass.put("X", 10);
+        weightedClass.put("XI", 11);
+        weightedClass.put("XII", 12);
+        reverseWeightedClass.put(1, "I");
+        reverseWeightedClass.put(2, "II");
+        reverseWeightedClass.put(3, "III");
+        reverseWeightedClass.put(4, "IV");
+        reverseWeightedClass.put(5, "V");
+        reverseWeightedClass.put(6, "VI");
+        reverseWeightedClass.put(7, "VII");
+        reverseWeightedClass.put(8, "VIII");
+        reverseWeightedClass.put(9, "IX");
+        reverseWeightedClass.put(10, "X");
+        reverseWeightedClass.put(11, "XI");
+        reverseWeightedClass.put(12, "XII");
+    }
 
+    //TODO: needs pagination for smooth experience
     public List<StudentResponseDto> getAll() {
         if (RoleUtility.isVigyanKendraUser()) {
             var vigyankendra = vigyanKendraDetailsService.getVigyanKendraFromAuth();
-            return vigyanKendraDetailsService.getStudentsByVigyanKendraById(vigyankendra.getId());
+            return
+                    vigyanKendraDetailsService.getStudentsByVigyanKendraById(vigyankendra.getId());
         }
-        return studentRepository.findAll()
+        /*return studentRepository.findAll()
                 .stream()
                 .map(StudentDetailsMapper.studentDetailsMapper::mapFromEntity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
+        return Collections.emptyList();
     }
 
     public List<StudentResponseDto> getAllByVigyanKendraId(Long id) {
@@ -91,6 +126,7 @@ public class StudentService {
     }
 
     public StudentResponseDto update(StudentRequestDTO dto) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         Student entity = studentRepository.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         this.validateVigyanKendraUserPermission(entity);
@@ -112,6 +148,7 @@ public class StudentService {
     }
 
     public void delete(Long id) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         Student entity = studentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         this.validateVigyanKendraUserPermission(entity);
@@ -170,6 +207,33 @@ public class StudentService {
         });
     }
 
+    public Map<String, List<StatisticsReportDto>> countByExamCenter() {
+        Map<String, List<StatisticsReportDto>> count = new HashMap<>();
+        List<VigyanKendraDetails> vigyanKendraDetailsList = vigyanKendraRepository.findAll();
+        List<StudentClass> studentClassList = studentClassRepository.findAll();
+        vigyanKendraDetailsList.forEach(vigyanKendraDetails -> {
+            var counts = examinationCentreDetailsService.getByVigyanKendra(vigyanKendraDetails)
+                    .stream()
+                    .map(examinationCentreDetails -> {
+                        List<StatisticsReportDto> reportDtoList = new ArrayList<>();
+                        studentClassList.forEach(studentClass -> {
+                            var reportDto = new StatisticsReportDto();
+                            reportDto.setVigyanKendraCode(vigyanKendraDetails.getCode());
+                            reportDto.setClassName(studentClass.getName());
+                            reportDto.setExamCenterName(examinationCentreDetails.getName());
+                            reportDto.setCount(studentRepository.getCountByStudentClassAndExamCenter(studentClass, examinationCentreDetails));
+                            reportDtoList.add(reportDto);
+                        });
+                        return reportDtoList;
+                    })
+                    .flatMap(Collection::stream)
+                    .sorted(Comparator.comparing(StatisticsReportDto::getExamCenterName))
+                    .collect(Collectors.toList());
+            count.put(vigyanKendraDetails.getCode(), counts);
+        });
+        return count;
+    }
+
     public void assignRollNumber(Long classId) {
 
     }
@@ -192,6 +256,42 @@ public class StudentService {
                 })
                 .collect(Collectors.toUnmodifiableList());
         studentRepository.saveAll(studentList);
+    }
+
+    public List<StudentResponseDto> promoteStudents(Set<Long> studentIds) {
+        List<StudentClass> classList = studentClassRepository.findAll();
+        if (studentIds.isEmpty()) return Collections.emptyList();
+        var currentSession = this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
+        List<Student> studentList = new ArrayList<>();
+        for (Long id : studentIds) {
+            Optional<Student> studentOptional = studentRepository.findById(id);
+            if (studentOptional.isPresent()) {
+                var student = studentOptional.get();
+                var studentClass = student.getStudentClass();
+                int studentClassWeight = weightedClass.get(studentClass.getName());
+                if (studentClassWeight < 10) {
+                    var newStudentClass = resolveClass(studentClassWeight + 1, classList);
+                    if (Objects.nonNull(newStudentClass)) {
+                        student.setStudentClass(newStudentClass);
+                        student.setRoll(generateRoll(newStudentClass, student.getVigyanKendraDetails()));
+                        student.setEnrollmentSession(currentSession);
+                        studentList.add(student);
+                    }
+                }
+            }
+        }
+        return studentRepository.saveAll(studentList)
+                .stream()
+                .map(StudentDetailsMapper.studentDetailsMapper::mapFromEntity)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    private StudentClass resolveClass(int classWeight, List<StudentClass> classList) {
+        String className = reverseWeightedClass.get(classWeight);
+        var studentClassOptional = classList.stream().filter(classDetails -> className.equalsIgnoreCase(classDetails.getName()))
+                .findFirst();
+        if (studentClassOptional.isPresent()) return studentClassOptional.get();
+        return null;
     }
 }
 

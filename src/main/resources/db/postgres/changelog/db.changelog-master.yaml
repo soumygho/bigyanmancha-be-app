@@ -17,3 +17,5 @@ databaseChangeLog:
       file: db/postgres/changelog/add-enrollment-session-8.0.sql
   - include:
      file: db/postgres/changelog/add-reporting-schema-9.0.sql
+  - include:
+      file: db/postgres/changelog/add-report-name-10.0.sql

@@ -4,6 +4,7 @@ import com.vigyanmancha.backend.annotation.AdminOrVigyankendraUser;
 import com.vigyanmancha.backend.annotation.AdminUser;
 import com.vigyanmancha.backend.dto.request.EnrollmentReportingRequest;
 import com.vigyanmancha.backend.dto.response.EnrollmentReportingResponse;
+import com.vigyanmancha.backend.enums.ReportType;
 import com.vigyanmancha.backend.service.ExcelStorageService;
 import com.vigyanmancha.backend.service.ReportingService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +32,16 @@ public class ReportingController {
     public EnrollmentReportingResponse prepareReport(
             @RequestBody EnrollmentReportingRequest enrollmentReportingRequest) {
         return reportingService.generateReportForVigyanKendra(enrollmentReportingRequest.getVigyanKendraId(),
-                enrollmentReportingRequest.getEnrollmentSessionId());
+                enrollmentReportingRequest.getEnrollmentSessionId(), ReportType.ENROLLMENT);
+    }
+
+    @PostMapping(path = "/statistics",
+            consumes = "application/json",
+            produces = "application/json")
+    @AdminOrVigyankendraUser
+    public EnrollmentReportingResponse prepareStatisticsReport(@RequestBody EnrollmentReportingRequest enrollmentReportingRequest) {
+        return reportingService.generateReportForVigyanKendra(enrollmentReportingRequest.getVigyanKendraId(),
+                enrollmentReportingRequest.getEnrollmentSessionId(), ReportType.STATISTICS);
     }
 
     @GetMapping(path = "/enrollment", produces = "application/json")

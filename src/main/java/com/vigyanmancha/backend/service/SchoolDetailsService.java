@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -34,10 +35,15 @@ public class SchoolDetailsService {
             var vigyanKendraDetails = vigyanKendraDetailsService.getVigyanKendraFromAuth();
             return vigyanKendraDetailsService.getSchoolDetailsListByVigyanKendraById(vigyanKendraDetails.getId());
         }
-        return repository.findAll()
+        /*return repository.findAll()
                 .stream()
                 .map(SchoolDetailsService::toDto)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
+        return Collections.emptyList();
+    }
+
+    public List<SchoolDetailsResponseDto> getAllByVigyanKendra(Long vigyankendraId) {
+        return vigyanKendraDetailsService.getSchoolDetailsListByVigyanKendraById(vigyankendraId);
     }
 
     public SchoolDetailsResponseDto create(SchoolDetailsRequestDTO dto) {
@@ -61,6 +67,7 @@ public class SchoolDetailsService {
     }
 
     public SchoolDetailsResponseDto update(Long id, SchoolDetailsRequestDTO dto) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         SchoolDetails existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SchoolDetails not found"));
         this.validateVigyanKendraUserPermission(existing);
@@ -72,6 +79,7 @@ public class SchoolDetailsService {
     }
 
     public SchoolDetailsResponseDto removeExamCenter(Long id) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         SchoolDetails existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SchoolDetails not found"));
         this.validateVigyanKendraUserPermission(existing);
@@ -81,6 +89,7 @@ public class SchoolDetailsService {
 
     @Transactional
     public void delete(Long id) {
+        this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
         SchoolDetails existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SchoolDetails not found"));
         this.validateVigyanKendraUserPermission(existing);

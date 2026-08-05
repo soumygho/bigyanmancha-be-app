@@ -1,10 +1,7 @@
 package com.vigyanmancha.backend.repository.postgres;
 
 
-import com.vigyanmancha.backend.domain.postgres.EnrollmentSession;
-import com.vigyanmancha.backend.domain.postgres.Student;
-import com.vigyanmancha.backend.domain.postgres.StudentClass;
-import com.vigyanmancha.backend.domain.postgres.VigyanKendraDetails;
+import com.vigyanmancha.backend.domain.postgres.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +22,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     @Query("SELECT s FROM Student s where s.studentClass = :class AND s.enrollmentSession = :enrollmentSession")
     List<Student> findByClassAndEnrollmentSession(@Param("class") StudentClass studentClass,
                                         @Param("enrollmentSession")EnrollmentSession enrollmentSession);
+
+    @Query("SELECT count (s) FROM Student s where s.studentClass = :class AND s.schoolDetails.examinationCentre = :examcenter")
+    long getCountByStudentClassAndExamCenter(@Param("class") StudentClass studentClass,
+                                             @Param("examcenter")ExaminationCentreDetails examinationCentreDetails);
 }

@@ -21,11 +21,13 @@ public class ReportDetails {
     @Column(name = "enrollment_year", nullable = false)
     private int enrollmentYear;
     @Column(name = "vigyankendra_code", nullable = false)
-    private String vigyanKendraCode;
+    private String vigyanKendraCode = "GLOBAL";
     @Column(name = "vigyankendra_name", nullable = false)
-    private String VigyanKendraName;
+    private String VigyanKendraName = "GLOBAL";
     @Column(name = "report_date", nullable = false)
     private String reportDate;
+    @Column(name = "report_name")
+    private String reportName;
     @Column(name = "status", nullable = false)
     private String status;
 }

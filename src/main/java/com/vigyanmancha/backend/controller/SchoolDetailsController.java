@@ -24,6 +24,13 @@ public class SchoolDetailsController {
         return schoolDetailsService.getAll();
     }
 
+
+    @AdminOrVigyankendraUser
+    @GetMapping(path = "/vigyan-kendra/{vigyanKendraId}", produces = "application/json")
+    public List<SchoolDetailsResponseDto> getAllSchoolsByBigyanKendra(@PathVariable("vigyanKendraId") Long vigyanKendraId) {
+        return schoolDetailsService.getAllByVigyanKendra(vigyanKendraId);
+    }
+
     @GetMapping(path="/{id}", produces = "application/json")
     @AdminOrVigyankendraUser
     public SchoolDetailsResponseDto getSchoolById(@PathVariable Long id) {

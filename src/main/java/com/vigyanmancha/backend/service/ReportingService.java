@@ -1,15 +1,15 @@
 package com.vigyanmancha.backend.service;
 
 import com.vigyanmancha.backend.domain.postgres.ReportDetails;
+import com.vigyanmancha.backend.dto.reporting.StatisticsReportDto;
 import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.response.EnrollmentReportingResponse;
 import com.vigyanmancha.backend.dto.response.StudentResponseDto;
+import com.vigyanmancha.backend.enums.ReportType;
 import com.vigyanmancha.backend.repository.postgres.ReportDetailsRepository;
 import com.vigyanmancha.backend.utility.DateUtility;
 import com.vigyanmancha.backend.utility.auth.RoleUtility;
 import jakarta.annotation.PreDestroy;
-import lombok.Generated;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +33,7 @@ public class ReportingService {
     private final ExcelStorageService excelStorageService;
     private final ReportDetailsRepository reportDetailsRepository;
     private final VigyanKendraDetailsService vigyanKendraDetailsService;
+    @Qualifier("reportExecutor")
     private final ExecutorService reportExecutor;
     private final EnrollmentSessionService enrollmentSessionService;
     private final String[] labelsHeadersForEnrollment = {
@@ -47,13 +48,21 @@ public class ReportingService {
             "Roll",
             "No"
     };
+    private final String[] labelsHeadersForEnrollmentStatistics = {
+            "SL. NO.",
+            "Exam Centre Name",
+            "Class",
+            "Total Count"
+    };
     private final List<String> headersForEnrollment = new LinkedList<>(Arrays.asList(labelsHeadersForEnrollment));
+    private final List<String> headersForStatistics = new LinkedList<>(Arrays.asList(labelsHeadersForEnrollmentStatistics));
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_FAILED = "FAILED";
     private static final String STATUS_COMPLETED = "COMPLETED";
 
     public List<EnrollmentReportingResponse> getAllReports() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
         if (RoleUtility.isVigyanKendraUser()) {
             return reportDetailsRepository.findAll()
                     .stream()
@@ -61,11 +70,15 @@ public class ReportingService {
                             report.getVigyanKendraCode().equals(RoleUtility.getVigyanKendraCode()) &&
                                     STATUS_COMPLETED.equals(report.getStatus()))
                     .map(this::mapFrom)
+                    .sorted(Comparator.comparing(r -> LocalDateTime.parse(r.getReportDate(), formatter),
+                            Comparator.reverseOrder()))
                     .collect(Collectors.toList());
         }
         return reportDetailsRepository.findAll()
                 .stream()
                 .map(this::mapFrom)
+                .sorted(Comparator.comparing(r -> LocalDateTime.parse(r.getReportDate(), formatter),
+                        Comparator.reverseOrder()))
                 .collect(Collectors.toList());
     }
 
@@ -83,22 +96,52 @@ public class ReportingService {
         }
     }
 
-    public EnrollmentReportingResponse generateReportForVigyanKendra(Long vigyanKendraId, long enrollmentId) {
-        var vigyanKendra =
-                vigyanKendraDetailsService.getVigyanKendraById(vigyanKendraId);
+    public EnrollmentReportingResponse generateReportForVigyanKendra(Long vigyanKendraId,
+                                                                     long enrollmentId,
+                                                                     ReportType reportType) {
         var reportDetails = new ReportDetails();
         reportDetails.setReportKey(UUID.randomUUID().toString());
         reportDetails.setReportDate(DateUtility.getCurrentTime());
-        reportDetails.setVigyanKendraCode(vigyanKendra.getCode());
-        reportDetails.setVigyanKendraName(vigyanKendra.getName());
         reportDetails.setStatus(STATUS_PENDING);
         reportDetails.setEnrollmentYear(enrollmentSessionService.getEnrollmentSession(enrollmentId).getYear());
-        final var savedReportDetails = reportDetailsRepository.save(reportDetails);
-        reportExecutor.submit(() -> {
-            processEnrollmentReportRequest(savedReportDetails, vigyanKendra);
-        });
-        return mapFrom(savedReportDetails);
+        ReportDetails savedReportDetails;
+        if(ReportType.ENROLLMENT == reportType) {
+            var vigyanKendra =
+                    vigyanKendraDetailsService.getVigyanKendraById(vigyanKendraId);
+            reportDetails.setVigyanKendraCode(vigyanKendra.getCode());
+            reportDetails.setVigyanKendraName(vigyanKendra.getName());
+            reportDetails.setReportName("Enrollment Report");
+            savedReportDetails = reportDetailsRepository.save(reportDetails);
+            reportExecutor.submit(() -> {
+                processEnrollmentReportRequest(savedReportDetails, vigyanKendra);
+            });
+            return mapFrom(savedReportDetails);
+        } else {
+            reportDetails.setReportName("Statistics Report");
+            savedReportDetails = reportDetailsRepository.save(reportDetails);
+            reportExecutor.submit(() -> {
+                processStaticsReportRequest(reportDetails);
+            });
+            return mapFrom(savedReportDetails);
+        }
     }
+
+    private void processStaticsReportRequest(ReportDetails reportDetails) {
+        try {
+            reportDetails.setStatus(STATUS_RUNNING);
+            reportDetailsRepository.save(reportDetails);
+            Map<String, List<StatisticsReportDto>> counts = studentService.countByExamCenter();
+            var bytes = prepareExcelForStaticsReport(counts);
+            excelStorageService.uploadExcel(reportDetails.getReportKey(), bytes);
+            reportDetails.setStatus(STATUS_COMPLETED);
+        } catch (Exception e) {
+            reportDetails.setStatus(STATUS_FAILED);
+            log.error(e.getMessage());
+        }
+        reportDetailsRepository.save(reportDetails);
+    }
+
+
 
     private void processEnrollmentReportRequest(ReportDetails reportDetails,
                                                 VigyanKendraDetailsRequestDTO vigyanKendra) {
@@ -150,6 +193,34 @@ public class ReportingService {
         }
     }
 
+    private byte[] prepareExcelForStaticsReport(Map<String, List<StatisticsReportDto>> counts) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            counts.entrySet().forEach(e -> {
+                var sheet = workbook.createSheet(e.getKey());
+                var row = sheet.createRow(0);
+                for (int i = 0; i < headersForStatistics.size(); i++) {
+                    row.createCell(i).setCellValue(headersForStatistics.get(i));
+                }
+                var countList = e.getValue();
+                for (int i = 0; i < countList.size(); i++) {
+                    var countDetails = countList.get(i);
+                    var dataRow = sheet.createRow(i + 1);
+                    dataRow.createCell(0).setCellValue(i + 1);
+                    dataRow.createCell(1).setCellValue(countDetails.getExamCenterName());
+                    dataRow.createCell(2).setCellValue(countDetails.getClassName());
+                    dataRow.createCell(3).setCellValue(countDetails.getCount());
+                }
+            });
+            workbook.write(baos);
+            byte[] bytes = baos.toByteArray();
+            return bytes;
+        } catch (IOException e) {
+            log.error("Error while preparing excel {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
     private EnrollmentReportingResponse mapFrom(ReportDetails reportDetails) {
         var response = new EnrollmentReportingResponse();
         response.setId(reportDetails.getId());
@@ -158,6 +229,7 @@ public class ReportingService {
         response.setEnrollmentYear(reportDetails.getEnrollmentYear());
         response.setVigyanKendraCode(reportDetails.getVigyanKendraCode());
         response.setVigyanKendraName(reportDetails.getVigyanKendraName());
+        response.setReportName(reportDetails.getReportName());
         response.setStatus(reportDetails.getStatus());
         return response;
     }

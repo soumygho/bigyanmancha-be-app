@@ -141,4 +141,15 @@ public class EnrollmentSessionService {
         }
         return session;
     }
+
+    public EnrollmentSession getActiveEnrollmentSession() {
+        var activeEnrollmentSessions = enrollmentSessionRepository.findByActive(true);
+        if (activeEnrollmentSessions.isEmpty()) {
+            throw new RuntimeException("No active enrollmentSession found");
+        }
+        if (activeEnrollmentSessions.size() > 1) {
+            throw new RuntimeException("More than one active enrollmentSession found");
+        }
+        return activeEnrollmentSessions.get(0);
+    }
 }

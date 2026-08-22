@@ -1,25 +1,30 @@
 package com.vigyanmancha.backend.service;
 
-import com.vigyanmancha.backend.domain.mysql.VigyanKendra;
 import com.vigyanmancha.backend.domain.postgres.*;
 import com.vigyanmancha.backend.dto.reporting.StatisticsReportDto;
 import com.vigyanmancha.backend.dto.request.SchoolDetailsRequestDTO;
 import com.vigyanmancha.backend.dto.request.StudentClassRequestDTO;
 import com.vigyanmancha.backend.dto.request.StudentRequestDTO;
 import com.vigyanmancha.backend.dto.request.VigyanKendraDetailsRequestDTO;
+import com.vigyanmancha.backend.dto.response.DRSheetResponse;
 import com.vigyanmancha.backend.dto.response.EnrollmentCountResponse;
+import com.vigyanmancha.backend.dto.response.StudentDetails;
 import com.vigyanmancha.backend.dto.response.StudentResponseDto;
 import com.vigyanmancha.backend.repository.postgres.*;
 import com.vigyanmancha.backend.utility.auth.RoleUtility;
 import com.vigyanmancha.backend.utility.mapper.StudentDetailsMapper;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,8 +81,7 @@ public class StudentService {
     public List<StudentResponseDto> getAll() {
         if (RoleUtility.isVigyanKendraUser()) {
             var vigyankendra = vigyanKendraDetailsService.getVigyanKendraFromAuth();
-            return
-                    vigyanKendraDetailsService.getStudentsByVigyanKendraById(vigyankendra.getId());
+            return vigyanKendraDetailsService.getStudentsByVigyanKendraById(vigyankendra.getId());
         }
         /*return studentRepository.findAll()
                 .stream()
@@ -90,16 +94,94 @@ public class StudentService {
         return vigyanKendraDetailsService.getStudentsByVigyanKendraById(id);
     }
 
+    public List<StudentResponseDto> getAllByVigyanKendraIdAndEnrollmentSession(Long vigyanKendraId,
+                                                                               EnrollmentSession enrollmentSession,
+                                                                               @Nullable ExaminationCentreDetails examinationCentreDetails,
+                                                                               @Nullable StudentClass studentClass) {
+        if (Objects.isNull(vigyanKendraId)) {
+            throw new RuntimeException("VigyanKendra Id is required.");
+        }
+        if (Objects.isNull(enrollmentSession)) {
+            throw new RuntimeException("Enrollment Session is required.");
+        }
+        return getStudentsByVigyanKendraAndEnrollmentYearOrExamCenterOrClass(vigyanKendraId, enrollmentSession, examinationCentreDetails, studentClass);
+    }
+
+        private List<StudentResponseDto> getStudentsByVigyanKendraAndEnrollmentYearOrExamCenterOrClass(Long vigyanKendraId,
+                                                                                                  EnrollmentSession enrollmentSession,
+                                                                                                  ExaminationCentreDetails examinationCentreDetails,
+                                                                                                  StudentClass studentClass) {
+        List<Student> studentsList ;
+        if(Objects.nonNull(examinationCentreDetails) && Objects.nonNull(studentClass)) {
+            studentsList =  studentRepository.findByVigyanKendraAndEnrollmentSessionAndExamCenterAndClass(
+                    vigyanKendraId, enrollmentSession, examinationCentreDetails, studentClass);
+
+        } else if(Objects.nonNull(examinationCentreDetails)) {
+            studentsList =  studentRepository.findByVigyanKendraAndEnrollmentSessionAndExamCenter(
+                    vigyanKendraId, enrollmentSession, examinationCentreDetails);
+        } else if(Objects.nonNull(studentClass)) {
+            studentsList =  studentRepository.findByVigyanKendraAndEnrollmentSessionAndClass(
+                    vigyanKendraId, enrollmentSession, studentClass);
+        } else {
+            studentsList =  studentRepository.findByVigyanKendraAndEnrollmentSession(
+                    vigyanKendraId, enrollmentSession);
+        }
+        if(Objects.isNull(studentsList)) {
+            return Collections.emptyList();
+        }
+        return studentsList.stream()
+                .map(StudentDetailsMapper.studentDetailsMapper::mapFromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<DRSheetResponse> getDRSheetData(@NotNull Long vigyanKendraId, @Nullable Long classId, @Nullable Long examCenterId) {
+        log.info("Fetching DR Sheet data for vigyanKendraId: {}, classId: {}, examCenterId: {}", vigyanKendraId, classId, examCenterId);
+        if (Objects.isNull(vigyanKendraId)) {
+            throw new RuntimeException("VigyanKendra Id is required.");
+        }
+        var vigyanKendraDetails = vigyanKendraDetailsService.getVigyanKendraById(vigyanKendraId);
+        ExaminationCentreDetails examinationCentreDetails = null;
+        StudentClass studentClass = null;
+        if (Objects.nonNull(classId) && classId != 0) {
+            studentClass = studentClassRepository.findById(classId).orElseThrow(() -> new RuntimeException("Student Class not found."));
+        }
+        if (Objects.nonNull(examCenterId) && examCenterId != 0) {
+            examinationCentreDetails = examinationCentreDetailsRepository.findById(examCenterId).orElseThrow(() -> new RuntimeException("Examination Centre not found."));
+        }
+        List<StudentResponseDto> studentResponseDtos =
+                getAllByVigyanKendraIdAndEnrollmentSession(vigyanKendraId, enrollmentSessionService.getActiveEnrollmentSession(), examinationCentreDetails, studentClass);
+        return studentResponseDtos.stream()
+                .collect(Collectors.groupingBy(student -> Arrays.asList(student.getClassId().toString(), student.getExaminationCentreId().toString(), student.getClassName(), student.getExaminationCentreName())))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    List<String> key = entry.getKey();
+                    List<StudentDetails> studentDetails = entry.getValue()
+                            .stream()
+                            .map(st -> StudentDetails.builder()
+                                    .no(st.getNumber())
+                                    .name(st.getName())
+                                    .roll(st.getRoll())
+                                    .build()).collect(Collectors.toUnmodifiableList());
+                    DRSheetResponse resp = DRSheetResponse.builder()
+                            .students(studentDetails)
+                            .className(key.get(2))
+                            .examCenterName(key.get(3))
+                            .vigyanKendraCode(vigyanKendraDetails.getCode())
+                            .vigyanKendraName(vigyanKendraDetails.getName())
+                            .build();
+                    return resp;
+                }).collect(Collectors.toUnmodifiableList());
+    }
+
     public StudentResponseDto getById(Long id) {
-        var entity = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+        var entity = studentRepository.findById(id).orElseThrow(() -> new RuntimeException("Student not found"));
         this.validateVigyanKendraUserPermission(entity);
         return StudentDetailsMapper.studentDetailsMapper.mapFromEntity(entity);
     }
 
     public StudentResponseDto create(StudentRequestDTO dto) {
-        VigyanKendraDetails vigyanKendraDetails = vigyanKendraRepository.findById(dto.getVigyanKendraId())
-                .orElseThrow(() -> new RuntimeException("Vigyan kendra details not found"));
+        VigyanKendraDetails vigyanKendraDetails = vigyanKendraRepository.findById(dto.getVigyanKendraId()).orElseThrow(() -> new RuntimeException("Vigyan kendra details not found"));
         if (RoleUtility.isVigyanKendraUser()) {
             var vigyankendra = vigyanKendraDetailsService.getVigyanKendraFromAuth();
             if (!Objects.equals(vigyankendra.getId(), vigyanKendraDetails.getId())) {
@@ -107,11 +189,8 @@ public class StudentService {
             }
         }
         EnrollmentSession enrollmentSession = enrollmentSessionService.validateAndGetEnrollmentSessionForCreate();
-        SchoolDetails school =
-                schoolDetailsRepository.findById(dto.getSchoolId())
-                        .orElseThrow(() -> new RuntimeException("School details not found"));
-        StudentClass studentClass = studentClassRepository.findById(dto.getStudentClassId())
-                .orElseThrow(() -> new RuntimeException("Class details not found"));
+        SchoolDetails school = schoolDetailsRepository.findById(dto.getSchoolId()).orElseThrow(() -> new RuntimeException("School details not found"));
+        StudentClass studentClass = studentClassRepository.findById(dto.getStudentClassId()).orElseThrow(() -> new RuntimeException("Class details not found"));
         Student entity = new Student();
         entity.setName(dto.getName());
         entity.setSex(dto.getSex());
@@ -127,16 +206,11 @@ public class StudentService {
 
     public StudentResponseDto update(StudentRequestDTO dto) {
         this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
-        Student entity = studentRepository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+        Student entity = studentRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("Student not found"));
         this.validateVigyanKendraUserPermission(entity);
-        VigyanKendraDetails vigyanKendraDetails = vigyanKendraRepository.findById(dto.getVigyanKendraId())
-                .orElseThrow(() -> new RuntimeException("Vigyan kendra details not found"));
-        SchoolDetails school =
-                schoolDetailsRepository.findById(dto.getSchoolId())
-                        .orElseThrow(() -> new RuntimeException("School details not found"));
-        StudentClass studentClass = studentClassRepository.findById(dto.getStudentClassId())
-                .orElseThrow(() -> new RuntimeException("Class details not found"));
+        VigyanKendraDetails vigyanKendraDetails = vigyanKendraRepository.findById(dto.getVigyanKendraId()).orElseThrow(() -> new RuntimeException("Vigyan kendra details not found"));
+        SchoolDetails school = schoolDetailsRepository.findById(dto.getSchoolId()).orElseThrow(() -> new RuntimeException("School details not found"));
+        StudentClass studentClass = studentClassRepository.findById(dto.getStudentClassId()).orElseThrow(() -> new RuntimeException("Class details not found"));
         entity.setName(dto.getName());
         entity.setSex(dto.getSex());
         entity.setSchoolDetails(school);
@@ -149,8 +223,7 @@ public class StudentService {
 
     public void delete(Long id) {
         this.enrollmentSessionService.validateAndGetEnrollmentSessionForModification();
-        Student entity = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+        Student entity = studentRepository.findById(id).orElseThrow(() -> new RuntimeException("Student not found"));
         this.validateVigyanKendraUserPermission(entity);
         studentRepository.deleteById(id);
     }
@@ -177,8 +250,7 @@ public class StudentService {
     }
 
     public EnrollmentCountResponse countAllEnrollments() {
-        return EnrollmentCountResponse.builder()
-                .build();
+        return EnrollmentCountResponse.builder().build();
     }
 
     public void generateDummyData() {
@@ -212,23 +284,18 @@ public class StudentService {
         List<VigyanKendraDetails> vigyanKendraDetailsList = vigyanKendraRepository.findAll();
         List<StudentClass> studentClassList = studentClassRepository.findAll();
         vigyanKendraDetailsList.forEach(vigyanKendraDetails -> {
-            var counts = examinationCentreDetailsService.getByVigyanKendra(vigyanKendraDetails)
-                    .stream()
-                    .map(examinationCentreDetails -> {
-                        List<StatisticsReportDto> reportDtoList = new ArrayList<>();
-                        studentClassList.forEach(studentClass -> {
-                            var reportDto = new StatisticsReportDto();
-                            reportDto.setVigyanKendraCode(vigyanKendraDetails.getCode());
-                            reportDto.setClassName(studentClass.getName());
-                            reportDto.setExamCenterName(examinationCentreDetails.getName());
-                            reportDto.setCount(studentRepository.getCountByStudentClassAndExamCenter(studentClass, examinationCentreDetails));
-                            reportDtoList.add(reportDto);
-                        });
-                        return reportDtoList;
-                    })
-                    .flatMap(Collection::stream)
-                    .sorted(Comparator.comparing(StatisticsReportDto::getExamCenterName))
-                    .collect(Collectors.toList());
+            var counts = examinationCentreDetailsService.getByVigyanKendra(vigyanKendraDetails).stream().map(examinationCentreDetails -> {
+                List<StatisticsReportDto> reportDtoList = new ArrayList<>();
+                studentClassList.forEach(studentClass -> {
+                    var reportDto = new StatisticsReportDto();
+                    reportDto.setVigyanKendraCode(vigyanKendraDetails.getCode());
+                    reportDto.setClassName(studentClass.getName());
+                    reportDto.setExamCenterName(examinationCentreDetails.getName());
+                    reportDto.setCount(studentRepository.getCountByStudentClassAndExamCenter(studentClass, examinationCentreDetails));
+                    reportDtoList.add(reportDto);
+                });
+                return reportDtoList;
+            }).flatMap(Collection::stream).sorted(Comparator.comparing(StatisticsReportDto::getExamCenterName)).collect(Collectors.toList());
             count.put(vigyanKendraDetails.getCode(), counts);
         });
         return count;
@@ -239,22 +306,14 @@ public class StudentService {
     }
 
     private void assignRollNumberAsynchronously(Long classId) {
-        EnrollmentSession enrollmentSession =
-                enrollmentSessionService.validateAndGetEnrollmentSessionForCreate();
-        StudentClass studentClass = studentClassRepository.findById(classId)
-                .orElseThrow(() -> new RuntimeException("Class details not found"));
-        List<Student> studentList = studentRepository
-                .findByClassAndEnrollmentSession(studentClass, enrollmentSession);
+        EnrollmentSession enrollmentSession = enrollmentSessionService.validateAndGetEnrollmentSessionForCreate();
+        StudentClass studentClass = studentClassRepository.findById(classId).orElseThrow(() -> new RuntimeException("Class details not found"));
+        List<Student> studentList = studentRepository.findByClassAndEnrollmentSession(studentClass, enrollmentSession);
         AtomicInteger number = new AtomicInteger();
-        studentList = studentList.stream()
-                .sorted(
-                        Comparator.comparing((Student student) -> student.getVigyanKendraDetails().getCode())
-                                .thenComparing(Student::getName))
-                .map(student -> {
-                    student.setNumber(String.format("%04d", number.incrementAndGet()));
-                    return student;
-                })
-                .collect(Collectors.toUnmodifiableList());
+        studentList = studentList.stream().sorted(Comparator.comparing((Student student) -> student.getVigyanKendraDetails().getCode()).thenComparing(Student::getName)).map(student -> {
+            student.setNumber(String.format("%04d", number.incrementAndGet()));
+            return student;
+        }).collect(Collectors.toUnmodifiableList());
         studentRepository.saveAll(studentList);
     }
 
@@ -280,16 +339,12 @@ public class StudentService {
                 }
             }
         }
-        return studentRepository.saveAll(studentList)
-                .stream()
-                .map(StudentDetailsMapper.studentDetailsMapper::mapFromEntity)
-                .collect(Collectors.toUnmodifiableList());
+        return studentRepository.saveAll(studentList).stream().map(StudentDetailsMapper.studentDetailsMapper::mapFromEntity).collect(Collectors.toUnmodifiableList());
     }
 
     private StudentClass resolveClass(int classWeight, List<StudentClass> classList) {
         String className = reverseWeightedClass.get(classWeight);
-        var studentClassOptional = classList.stream().filter(classDetails -> className.equalsIgnoreCase(classDetails.getName()))
-                .findFirst();
+        var studentClassOptional = classList.stream().filter(classDetails -> className.equalsIgnoreCase(classDetails.getName())).findFirst();
         if (studentClassOptional.isPresent()) return studentClassOptional.get();
         return null;
     }

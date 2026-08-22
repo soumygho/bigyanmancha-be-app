@@ -2,7 +2,9 @@ package com.vigyanmancha.backend.controller;
 
 import com.vigyanmancha.backend.annotation.AdminOrVigyankendraUser;
 import com.vigyanmancha.backend.annotation.AdminUser;
+import com.vigyanmancha.backend.dto.request.DRSheetRequest;
 import com.vigyanmancha.backend.dto.request.StudentRequestDTO;
+import com.vigyanmancha.backend.dto.response.DRSheetResponse;
 import com.vigyanmancha.backend.dto.response.StudentResponseDto;
 import com.vigyanmancha.backend.service.StudentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -78,8 +80,16 @@ public class StudentController {
         return studentService.promoteStudents(studentIds);
     }
 
+    @PostMapping(path = "/dr-sheet", produces = "application/json", consumes = "application/json")
+    @AdminUser
+    public List<DRSheetResponse> getDRSheetData(@RequestBody DRSheetRequest request) {
+        return studentService.getDRSheetData(request.vigyanKendraId(), request.classId(), request.examCenterId());
+    }
+
     public void getStatisticsData() {
 
     }
+
+
 }
 
